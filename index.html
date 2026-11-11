@@ -1,0 +1,1684 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Buchhaltung Sek II Mathematik</title>
+<!-- Entwurf 11.11.2026 – gleiche Bauweise wie die Praxisbesuche-App Sek I:
+     eine Datei, Daten im gewählten Ordner (Daten/stamm aus Excel, Daten/eintraege/<Kürzel> = jede Änderung als eigene kleine Datei). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<style>
+:root {
+  --tinte: #3a3a3a; --braun: #8a6a3a; --braun-dunkel: #6e532c; --sand: #f5eddf; --sand2: #e9dcc6; --linie: #e3e3e3; --leise: #6b6b6b;
+  --weiss: #ffffff; --rot: #fbe0e3; --rot-rand: #d9707f; --gelb: #fff3c4; --gelb-rand: #d8b84a; --gruen: #dcefdf; --gruen-rand: #6fae7a;
+  --grau: #f1f1f1; --akzent: #2f5f8a; --achtung: #a33a2e;
+  --hand: "Patrick Hand", "Segoe Print", "Bradley Hand", cursive;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 -apple-system, "Segoe UI", Arial, sans-serif; color: var(--tinte); background: #fafafa; }
+header { background: var(--braun); color: #fff; position: sticky; top: 0; z-index: 5; }
+.kopf1 { display: flex; gap: 16px; align-items: center; padding: 8px 20px; flex-wrap: wrap; }
+h1, h2, h3 { font-family: var(--hand); font-weight: 400; letter-spacing: .2px; }
+header h1 { font-size: 23px; margin: 0 10px 0 0; }
+h2 { font-size: 26px; margin: 18px 0 8px; } h3 { font-size: 20px; margin: 14px 0 6px; }
+.kopf1 .rechts { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.kopf1 select { font: inherit; padding: 3px 6px; border-radius: 6px; border: 0; }
+.marke { background: #fff; color: var(--braun-dunkel); border-radius: 4px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.marke.warn { background: var(--achtung); color: #fff; }
+nav { display: flex; gap: 2px; flex-wrap: wrap; background: var(--sand2); padding: 6px 20px 0; }
+nav button { font: inherit; border: 0; background: transparent; padding: 7px 14px; border-radius: 8px 8px 0 0; cursor: pointer; color: var(--braun-dunkel); }
+nav button.an { background: #fafafa; font-weight: 600; }
+nav button.rechts { margin-left: auto; }
+.umschalter { display: flex; gap: 4px; margin: -4px 0 4px; }
+.kacheln-start { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.kacheln-start .aufg { background: #fff; border: 1px solid var(--linie); border-radius: 10px; padding: 8px 12px; cursor: pointer; min-width: 150px; }
+.kacheln-start .aufg.an { border-color: var(--braun); box-shadow: 0 0 0 2px var(--sand2); }
+.kacheln-start .aufg.null { opacity: .45; cursor: default; }
+.kacheln-start .aufg .zahl { font-size: 26px; }
+main { padding: 6px 20px 60px; max-width: 1500px; }
+button, .knopf { font: inherit; cursor: pointer; border: 1px solid #c9b791; background: #fff; color: var(--braun-dunkel); border-radius: 6px; padding: 4px 10px; }
+button.haupt { background: var(--braun); color: #fff; border-color: var(--braun); }
+button.klein { padding: 1px 7px; font-size: 12px; }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; padding: 4px 6px; border: 1px solid #cfcfcf; border-radius: 5px; background: #fff; }
+textarea { width: 100%; min-height: 60px; }
+.leise { color: var(--leise); } .klein { font-size: 12px; }
+.leiste { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: #fff; border: 1px solid var(--linie); border-radius: 8px; padding: 8px 12px; margin: 10px 0; }
+.leiste .gr { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.chip { border: 1px solid #cfc3a8; border-radius: 14px; padding: 2px 10px; background: #fff; cursor: pointer; font-size: 13px; color: var(--tinte); }
+.chip.an { background: var(--braun); border-color: var(--braun); color: #fff; }
+table { border-collapse: collapse; background: #fff; }
+th, td { border: 1px solid var(--linie); padding: 5px 7px; vertical-align: top; text-align: left; }
+th { background: var(--sand); font-weight: 600; font-size: 13px; position: sticky; top: 0; }
+tr.klickbar:hover td { background: #fbf8f1; cursor: pointer; }
+.raster td.zelle { min-width: 150px; max-width: 220px; padding: 3px; }
+.kachel { border: 1px solid var(--linie); border-left-width: 5px; border-radius: 6px; padding: 4px 7px; margin: 2px 0; cursor: pointer; font-size: 12.5px; line-height: 1.35; background: var(--weiss); }
+.kachel:hover { box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.kachel .k1 { font-weight: 600; display: flex; justify-content: space-between; gap: 6px; }
+.kachel .k2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kachel.fertig { color: #557; font-size: 12px; } .kachel.fertig .k1 { font-weight: 500; }
+.raster td.zelle { min-width: 150px; max-width: 210px; }
+.st-weiss { background: #fff; border-left-color: #bbb; }
+.st-rot { background: var(--rot); border-left-color: var(--rot-rand); }
+.st-gelb { background: var(--gelb); border-left-color: var(--gelb-rand); }
+.st-gruen { background: var(--gruen); border-left-color: var(--gruen-rand); }
+.st-na { background: repeating-linear-gradient(135deg, #f6f6f6 0 6px, #efefef 6px 12px); color: #aaa; border-left-color: #ddd; cursor: default; text-align: center; }
+.plus { color: #9a8a6a; border: 1px dashed #d8ccb0; border-radius: 6px; text-align: center; padding: 3px; font-size: 12px; cursor: pointer; }
+.plus:hover { background: var(--sand); }
+.punkt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; border: 1px solid #999; vertical-align: -1px; margin-right: 4px; }
+.punkt.st-rot { background: var(--rot-rand); border-color: var(--rot-rand); } .punkt.st-gelb { background: var(--gelb-rand); border-color: var(--gelb-rand); } .punkt.st-gruen { background: var(--gruen-rand); border-color: var(--gruen-rand); }
+.legende { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--leise); }
+.karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+.karte { background: #fff; border: 1px solid var(--linie); border-radius: 10px; padding: 10px 14px; }
+.karte h3 { margin-top: 2px; }
+.karte ul { margin: 4px 0; padding-left: 18px; } .karte li { margin: 3px 0; }
+.zahl { font-family: var(--hand); font-size: 30px; line-height: 1; }
+a.link, span.link { color: var(--akzent); cursor: pointer; text-decoration: underline; text-decoration-color: #b8c8d8; }
+.warnung { background: #fbe9e6; border: 1px solid #e6b8b0; color: #7a2a20; border-radius: 6px; padding: 6px 10px; margin: 8px 0; }
+.hinweis { background: #eef4fa; border: 1px solid #c8d8e8; border-radius: 6px; padding: 6px 10px; margin: 8px 0; }
+dialog { border: 0; border-radius: 12px; padding: 0; width: min(760px, 96vw); max-height: 92vh; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+dialog::backdrop { background: rgba(40,30,10,.35); }
+.dkopf { background: var(--braun); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2; }
+.dkopf h3 { margin: 0; }
+.dinhalt { padding: 12px 16px; }
+.dfuss { padding: 10px 16px; border-top: 1px solid var(--linie); display: flex; gap: 8px; justify-content: flex-end; position: sticky; bottom: 0; background: #fff; }
+.form { display: grid; grid-template-columns: 150px 1fr; gap: 6px 10px; align-items: center; }
+.form label { color: var(--leise); font-size: 13px; }
+.form .voll { grid-column: 1 / -1; }
+.excel { white-space: pre-wrap; background: #f7f7f2; border: 1px dashed #d6d0bd; border-radius: 6px; padding: 6px 8px; font-size: 12.5px; }
+.verlauf { font-size: 12.5px; color: var(--leise); }
+.verlauf li { margin: 2px 0; }
+.zuteilung td { vertical-align: middle; }
+.zuteilung select.pxl { max-width: 330px; }
+.balken { display: inline-block; height: 8px; background: var(--braun); border-radius: 4px; vertical-align: middle; }
+.ok { color: #2e7a3c; } .nein { color: var(--achtung); }
+.buch td, .buch th { text-align: center; padding: 3px 6px; font-size: 13px; }
+.buch td.sem, .buch th.sem { text-align: left; }
+.buch .gtrenn { border-left: 2px solid #b9a77f; }
+.buch tr.ziel td { background: var(--sand); font-weight: 600; }
+#schublade { position: fixed; top: 0; right: 0; height: 100vh; width: min(640px, 100vw); background: #fdfbf7; box-shadow: -6px 0 24px rgba(0,0,0,.18); transform: translateX(105%); transition: transform .2s; z-index: 20; overflow-y: auto; padding: 0 0 40px; }
+#schublade.offen { transform: none; }
+#schublade .skopf { background: var(--braun); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2; }
+#schublade .skopf h2 { margin: 0; font-size: 26px; }
+#schublade .sinhalt { padding: 6px 16px; }
+.eigen { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 6px 0; }
+.eigen span { background: #fff; border: 1px solid var(--linie); border-radius: 12px; padding: 1px 9px; font-size: 12.5px; }
+.baustein { background: #fff; border: 1px solid var(--linie); border-left-width: 5px; border-radius: 8px; padding: 7px 10px; margin: 8px 0; font-size: 13px; }
+.baustein .bk { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.baustein .bk b { font-size: 14px; }
+.baustein.kompakt { padding: 4px 10px; margin: 4px 0; cursor: pointer; font-size: 12.5px; }
+.baustein.kompakt:hover { box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.baustein dl { display: grid; grid-template-columns: 70px 1fr; gap: 2px 8px; margin: 5px 0 0; }
+.baustein dt { color: var(--leise); font-size: 12px; } .baustein dd { margin: 0; }
+.notiz { border-left: 3px solid #d6c9a8; padding: 3px 10px; margin: 6px 0; background: #fff; white-space: pre-wrap; }
+.notiz .wer { font-size: 12px; color: var(--leise); white-space: normal; }
+.lekttab td, .lekttab th { padding: 2px 5px; } .lekttab input { padding: 2px 4px; }
+.lekttab tr.gewaehlt td { background: var(--gelb); font-weight: 600; }
+.woche { display: grid; gap: 6px; margin-bottom: 6px; }
+.tag { background: #fff; border: 1px solid var(--linie); border-radius: 8px; min-height: 40px; }
+.tag .tkopf { background: var(--sand); font-size: 12.5px; font-weight: 600; padding: 3px 8px; border-radius: 8px 8px 0 0; }
+.lek { margin: 4px; padding: 4px 6px; border: 1px solid var(--linie); border-left: 4px solid #bbb; border-radius: 5px; font-size: 12px; cursor: pointer; line-height: 1.3; }
+.lek:hover { box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.lek.ub { background: var(--gelb); border-left-color: var(--gelb-rand); }
+.lek.hosp { color: var(--leise); border-left-style: dashed; }
+.kopfzeile { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; background: var(--sand); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.kopfzeile > label { display: flex; gap: 5px; align-items: center; color: var(--leise); }
+label.ohne { color: inherit !important; font-size: 13px; white-space: nowrap; }
+.abschnitt { border-top: 1px solid var(--linie); padding: 6px 0 8px; margin-top: 6px; }
+.abschnitt h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--leise); font-weight: 600; }
+details.weiteres { border-top: 1px solid var(--linie); padding-top: 6px; margin-top: 4px; }
+.ablage.klein-ablage { display: inline-block; margin: 0 0 0 10px; padding: 2px 10px; border-width: 1px; }
+.pille { display: inline-block; min-width: 30px; text-align: center; font-size: 11.5px; padding: 1px 5px; margin: 1px 2px 1px 0; border-radius: 5px; border: 1px solid #ccc; }
+.pille.st-weiss { background: #fff; } .pille.st-rot { background: var(--rot); border-color: var(--rot-rand); } .pille.st-gelb { background: var(--gelb); border-color: var(--gelb-rand); } .pille.st-gruen { background: var(--gruen); border-color: var(--gruen-rand); }
+.pille.bms::after { content: "+"; font-weight: 700; } .pille.leer { border-style: dashed; color: #aaa; } .pille.weg { border-color: transparent; }
+.studliste td { padding: 6px 9px; vertical-align: middle; }
+.karte.termine { grid-column: 1 / -1; } .karte.termine table { width: 100%; } .karte.termine td { border: 0; border-top: 1px solid var(--linie); }
+table.pensum { margin-top: 6px; } table.pensum td, table.pensum th { padding: 2px 4px; text-align: center; font-size: 12.5px; } table.pensum input { width: 40px; padding: 1px 3px; } table.pensum { width: 100%; }
+table.abrechnung { width: 100%; margin: 4px 0 6px; } table.abrechnung td, table.abrechnung th { text-align: center; } table.abrechnung td:first-child { text-align: left; }
+.buchsumme { display: flex; gap: 18px; margin: 4px 0 8px; } .buchsumme > div { text-align: center; }
+.buch tr.gewaehlt td { background: var(--sand); }
+#druck { display: none; }
+@media print {
+  body > *:not(#druck) { display: none !important; } #druck { display: block; font: 11pt/1.35 Arial, sans-serif; color: #000; }
+  #druck h1 { font: 700 18pt Arial; margin: 0 0 2pt; } #druck h2 { font: 700 13pt Arial; margin: 14pt 0 4pt; } #druck h3 { font: 700 11pt Arial; margin: 10pt 0 3pt; }
+  #druck .stand { color: #555; margin: 0 0 8pt; } #druck table { border-collapse: collapse; width: 100%; margin: 4pt 0 8pt; page-break-inside: avoid; }
+  #druck th, #druck td { border: 0.5pt solid #888; padding: 3pt 5pt; vertical-align: top; text-align: left; font-size: 10pt; position: static; background: none; }
+  #druck th { background: #eee; } #druck .code { font-size: 8.5pt; color: #333; font-weight: 400; } #druck ul { margin: 0; padding-left: 13pt; } #druck td.art, #druck th.art { width: 70pt; font-weight: 700; }
+}
+.ablage { margin-top: 4px; border: 2px dashed #d0c3a3; border-radius: 8px; padding: 8px; text-align: center; color: var(--braun-dunkel); font-size: 12.5px; cursor: pointer; background: #fdfaf3; }
+.ablage:hover, .ablage.drueber { background: var(--sand); border-color: var(--braun); }
+details > summary { cursor: pointer; margin: 6px 0; }
+.zentral { max-width: 640px; margin: 40px auto; text-align: center; }
+.zentral .karte { text-align: left; }
+.mini { font-size: 11.5px; color: var(--leise); }
+@media (max-width: 700px) { .form { grid-template-columns: 1fr; } main { padding: 6px 10px 60px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="kopf1">
+    <h1>Buchhaltung Sek II · Mathematik</h1>
+    <span class="marke">Entwurf</span>
+    <span id="beispielMarke"></span>
+    <div class="rechts">
+      <span id="ordnerstatus" class="klein"></span>
+      <label class="klein">Ich bin <select id="ich" onchange="ichWaehlen(this.value)"></select></label>
+    </div>
+  </div>
+  <nav id="nav"></nav>
+</header>
+<main id="main"></main>
+<aside id="schublade"></aside>
+<dialog id="dlg"></dialog>
+
+<script>
+"use strict";
+/* ====================== Grundlagen ====================== */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function lies(k) { try { return localStorage.getItem("s2." + k); } catch (e) { return null; } }
+function merke(k, v) { try { localStorage.setItem("s2." + k, v); } catch (e) {} }
+function meldung(t) { const d = document.createElement("div"); d.className = "hinweis"; d.style.cssText = "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.2)"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4200); }
+
+const ARTEN = [
+  { k: "SP", name: "Standortpraktikum", praktikum: true },
+  { k: "BP", name: "Berufspraktikum", praktikum: true },
+  { k: "PP", name: "Prüfungspraktikum", praktikum: true },
+  { k: "PA", name: "Projektarbeit", praktikum: false },
+  { k: "IVA", name: "Ind. Vertiefungsarbeit", praktikum: false },
+  { k: "DP", name: "Diplomprüfung", praktikum: false },
+];
+const ART = Object.fromEntries(ARTEN.map((a) => [a.k, a]));
+/* Stufen wie die Legende in der Excel-Liste: weiss = zu organisieren, rot = PxL zu finden, gelb = UB vereinbaren/durchführen, grün = abgeschlossen */
+const STATUS_P = [
+  ["offen", "noch zu organisieren", "weiss"],
+  ["pxl_suchen", "PxL zu finden", "rot"],
+  ["angefragt", "PxL angefragt", "rot"],
+  ["zusage", "Zusage PxL · AVB ausstehend", "gelb"],
+  ["avb", "AVB liegt vor · UB vereinbaren", "gelb"],
+  ["ub_geplant", "UB vereinbart", "gelb"],
+  ["abgeschlossen", "abgeschlossen", "gruen"],
+];
+const STATUS_A = [
+  ["offen", "noch offen", "weiss"],
+  ["laeuft", "Thema steht · in Arbeit", "gelb"],
+  ["abgegeben", "abgegeben · Begutachtung", "gelb"],
+  ["abgeschlossen", "abgeschlossen", "gruen"],
+];
+/* Diplomprüfung Fachdidaktik: Herbst (Sept/Jan, HS) oder Sommer (Juni/Juli, FS); eine Nachprüfung ist ein eigener Eintrag */
+const STATUS_DP = [
+  ["offen", "noch offen", "weiss"],
+  ["geplant", "Termin steht", "gelb"],
+  ["nachpruefung", "nicht bestanden · Nachprüfung", "rot"],
+  ["abgeschlossen", "bestanden", "gruen"],
+];
+const statusListe = (art) => (art === "DP" ? STATUS_DP : ART[art] && !ART[art].praktikum ? STATUS_A : STATUS_P);
+const dpTermin = (p) => (/^HS/.test(p.semester || "") ? "Herbst" : /^FS/.test(p.semester || "") ? "Sommer" : "");
+const statusInfo = (p) => statusListe(p.art).find((s) => s[0] === p.status) || statusListe(p.art)[0];
+const STAND_STUDI = [["aktiv", "im Studium"], ["unterbruch", "Studienunterbruch"], ["abgeschlossen", "abgeschlossen"], ["exmatrikuliert", "exmatrikuliert"]];
+const VERF = [["", "?"], ["ja", "ja"], ["angefragt", "angefragt"], ["vielleicht", "vielleicht"], ["nein", "nein"]];
+const PROFILE = ["Monofach", "Erstfach", "Zweitfach", "Zusatzfach", "aeB"];
+const EINST_STD = {
+  team: [{ kuerzel: "alh", name: "" }, { kuerzel: "wec", name: "" }],   // Namen und Mails stehen in Daten/stamm/einstellungen.json, nie im Code (öffentlich)
+  zuteilung: ["wec"],
+  admin: ["alh"],
+  ansaetze: { SP: 6, BP: 6, aeB: 6, PP: 8, PA: 10, IVA: 20 },
+  /* Fälle laut «Übersicht über mögliche S2-Studiengangs-Verläufe» (v2408) */
+  profile: {
+    Monofach: { SP: "18 L.", BP: "36 L.", PP: "18 L.", PA: "ja", IVA: "ja", DP: "ja" },
+    Erstfach: { SP: "18 L.", BP: "18 L.", PP: "9 L.", IVA: "ja", DP: "ja" },
+    Zweitfach: { BP: "18 L.", PP: "9 L.", IVA: "ja", DP: "ja" },
+    Zusatzfach: { BP: "18 L.", PP: "18 L.", DP: "ja" },
+    aeB: { SP: "Besuch in der eigenen Klasse" },
+  },
+  ziele: [],
+};
+
+/* Semester: FS26 < HS26 < FS27 … */
+function semKey(s) { const m = /^(HS|FS)(\d\d)$/.exec(s || ""); return m ? Number(m[2]) * 2 + (m[1] === "HS" ? 1 : 0) : 0; }
+function semAus(k) { return (k % 2 ? "HS" : "FS") + String(Math.floor(k / 2)).padStart(2, "0"); }
+function semHeute() { const d = new Date(), y = d.getFullYear() % 100, m = d.getMonth() + 1; return m >= 8 ? "HS" + y : m === 1 ? "HS" + (y - 1) : "FS" + y; }
+function semesterListe() {
+  let lo = semKey(semHeute()) - 2, hi = semKey(semHeute()) + 3;
+  for (const p of Object.values(D.praktika)) if (p.semester) { lo = Math.min(lo, semKey(p.semester)); hi = Math.max(hi, semKey(p.semester)); }
+  const l = []; for (let k = lo; k <= hi; k++) l.push(semAus(k)); return l;
+}
+function datumKurz(iso) { if (!iso) return ""; const [y, m, d] = iso.split("-"); return `${Number(d)}.${Number(m)}.${y.slice(2)}`; }
+function heuteIso() { return new Date().toISOString().slice(0, 10); }
+const nameVon = (s) => (s ? `${s.name} ${s.vorname || ""}`.trim() : "?");
+const pxlKurz = (x) => (x ? `${x.vorname ? x.vorname + " " : ""}${x.name}` : "");
+const schuleKurz = (x) => (x ? String(x.schule || "").replace(/:\s*(SEK2|S2)$/i, "").replace(/,?\s*SEK2$/i, "").trim() : "");
+
+/* ====================== Zustand ====================== */
+const S = {
+  ordner: null, beispiel: false, ich: lies("ich") || "", ansicht: lies("ansicht") || "start",
+  stamm: { studis: [], pxl: [], praktika: [], einst: null, schultypen: {} }, eintraege: [], geladen: false,
+  f: Object.assign({ stand: "aktiv", doz: "", sem: "", status: "", suche: "", pxlSem: "", pxlTyp: "", pxlVerf: "", pxlSuche: "", zuSem: "", nurMeine: true }, JSON.parse(lies("filter") || "{}")),
+};
+let D = { studis: {}, pxl: {}, praktika: {}, einst: EINST_STD, hist: {} };
+
+/* ====================== Ordner (File System Access, nur Chrome/Edge) ====================== */
+const IDB = {
+  db() { return new Promise((ok, nein) => { const r = indexedDB.open("praktika-s2", 1); r.onupgradeneeded = () => r.result.createObjectStore("k"); r.onsuccess = () => ok(r.result); r.onerror = () => nein(r.error); }); },
+  async get(k) { const db = await this.db(); return new Promise((ok) => { const r = db.transaction("k").objectStore("k").get(k); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); },
+  async set(k, v) { const db = await this.db(); return new Promise((ok) => { const t = db.transaction("k", "readwrite"); t.objectStore("k").put(v, k); t.oncomplete = ok; }); },
+};
+/* Speicher-Ordner nur im Browser (für «Beispiel ansehen») – gleiche Schnittstelle wie ein echter Ordner */
+class MemDatei { constructor(n) { this.kind = "file"; this.name = n; this.inhalt = new Blob([]); }
+  async getFile() { return new File([this.inhalt], this.name, { type: this.inhalt.type }); }
+  async createWritable() { const h = this, teile = []; return { async write(d) { teile.push(d); }, async close() { h.inhalt = new Blob(teile, { type: teile[0] && teile[0].type || "" }); } }; } }
+class MemOrdner { constructor(n) { this.kind = "directory"; this.name = n; this.k = new Map(); }
+  async getDirectoryHandle(n, o = {}) { let x = this.k.get(n); if (!x) { if (!o.create) throw new DOMException(n, "NotFoundError"); x = new MemOrdner(n); this.k.set(n, x); } return x; }
+  async getFileHandle(n, o = {}) { let x = this.k.get(n); if (!x) { if (!o.create) throw new DOMException(n, "NotFoundError"); x = new MemDatei(n); this.k.set(n, x); } return x; }
+  async *entries() { for (const e of [...this.k]) yield e; } }
+
+async function verzeichnis(pfad, anlegen = false) { let d = S.ordner; for (const t of pfad.split("/").filter(Boolean)) d = await d.getDirectoryHandle(t, { create: anlegen }); return d; }
+async function leseJSON(pfad, std) { try { const t = pfad.split("/"), n = t.pop(); const d = await verzeichnis(t.join("/")); return JSON.parse(await (await (await d.getFileHandle(n)).getFile()).text()); } catch (e) { return std; } }
+async function schreibeJSON(pfad, obj) { const t = pfad.split("/"), n = t.pop(); const d = await verzeichnis(t.join("/"), true); const w = await (await d.getFileHandle(n, { create: true })).createWritable(); await w.write(JSON.stringify(obj, null, 1)); await w.close(); }
+
+async function ordnerWaehlen() {
+  if (!window.showDirectoryPicker) return meldung("Diese Seite braucht Chrome oder Edge (Ordnerzugriff).");
+  let h; try { h = await showDirectoryPicker({ id: "praktika-s2", mode: "readwrite" }); } catch (e) { if (e.name !== "AbortError") meldung("Ordner konnte nicht geöffnet werden: " + e.message); return; }
+  const d = h.name === "Daten" ? h : await h.getDirectoryHandle("Daten").catch(() => null);
+  if (!d || !(await d.getDirectoryHandle("stamm").catch(() => null))) return meldung(`Im Ordner «${h.name}» liegen keine Daten dieser App. Gewählt werden muss «Buchhaltung Sek II Mathematik» auf SwitchDrive.`);
+  await IDB.set("ordner", h); S.beispiel = false; S.ordner = d; S.wurzel = h; await allesLaden();
+}
+async function ordnerZugriff() {
+  const h = await IDB.get("ordner").catch(() => null); if (!h) return false;
+  if ((await h.queryPermission({ mode: "readwrite" })) === "granted") { S.wurzel = h; S.ordner = h.name === "Daten" ? h : await h.getDirectoryHandle("Daten"); return true; }
+  S.ordnerWartet = h; return false;
+}
+async function zugriffErlauben() { const h = S.ordnerWartet; if (h && (await h.requestPermission({ mode: "readwrite" })) === "granted") { S.wurzel = h; S.ordner = h.name === "Daten" ? h : await h.getDirectoryHandle("Daten"); S.ordnerWartet = null; await allesLaden(); } }
+
+/* ---------- Ausbildungsvereinbarungen: liegen als Dateien im App-Ordner unter «Ausbildungsvereinbarungen/<Semester>/» ---------- */
+async function wurzelDatei(pfad, anlegen = false) {
+  let d = S.wurzel || S.ordner; const t = pfad.split("/").filter(Boolean), n = t.pop();
+  for (const x of t) d = await d.getDirectoryHandle(x, { create: anlegen });
+  return d.getFileHandle(n, { create: anlegen });
+}
+const dateiName = (s) => s.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
+function avbWaehlen(id) { const i = document.createElement("input"); i.type = "file"; i.accept = ".pdf,.docx,.doc,.jpg,.jpeg,.png,.heic"; i.onchange = () => i.files[0] && avbHochladen(id, i.files[0]); i.click(); }
+async function avbHochladen(id, datei, opt = {}) {
+  if (!S.ich) return meldung("Bitte oben rechts «Ich bin» wählen.");
+  const p = D.praktika[id], s = D.studis[p.student], x = D.pxl[p.pxl], sem = p.semester || "ohne Semester";
+  const endung = (datei.name.match(/\.[a-z0-9]+$/i) || [".pdf"])[0].toLowerCase();
+  const basis = dateiName(`AVB ${s.name} ${s.vorname} ${p.art} ${sem}${x ? " " + x.name : ""}`);
+  let pfad, nr = 1;
+  // nie eine vorhandene Datei überschreiben: sonst «(2)», «(3)» …
+  while (true) { pfad = `Ausbildungsvereinbarungen/${sem}/${basis}${nr > 1 ? ` (${nr})` : ""}${endung}`; try { await wurzelDatei(pfad); nr++; } catch (e) { break; } }
+  try { const w = await (await wurzelDatei(pfad, true)).createWritable(); await w.write(datei); await w.close(); }
+  catch (e) { return meldung("Hochladen ging nicht: " + e.message); }
+  const f = { avbDatei: pfad, avb: true };
+  if (opt.quelle) f.avbQuelle = opt.quelle;
+  if (opt.lektionen && opt.lektionen.length) f.lektionen = opt.lektionen;
+  if (["offen", "pxl_suchen", "angefragt", "zusage"].includes(p.status)) f.status = "avb";
+  await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f });
+  if (opt.still) return;
+  meldung("Ausbildungsvereinbarung abgelegt: " + pfad);
+  await lektionenLesen(id, datei);
+}
+async function avbNeuLesen(id) {
+  try { await lektionenLesen(id, await (await wurzelDatei(D.praktika[id].avbDatei)).getFile()); } catch (e) { meldung("AVB nicht gefunden: " + e.message); }
+}
+async function avbOeffnen(pfad) {
+  try { const f = await (await wurzelDatei(pfad)).getFile(); const u = URL.createObjectURL(f); window.open(u, "_blank"); setTimeout(() => URL.revokeObjectURL(u), 60000); }
+  catch (e) { meldung("Datei nicht gefunden (noch nicht synchronisiert?): " + pfad); }
+}
+const avbLink = (p) => (p.avbDatei ? `<span class="link" title="${esc(p.avbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.avbDatei))})">📄 AVB</span>` : "");
+/* Termin des Unterrichtsbesuchs mit Uhrzeit */
+const ubText = (p) => (p.ub ? `${datumKurz(p.ub)}${p.ubZeit ? ", " + p.ubZeit + (p.ubBis ? "–" + p.ubBis : "") + " Uhr" : ""}` : "");
+const pxlKontakt = (x) => (x ? [x.mail ? `<a class="link" href="mailto:${esc(x.mail.trim())}" onclick="event.stopPropagation()">${esc(x.mail.trim())}</a>` : `<span class="nein">E-Mail fehlt</span>`, x.tel ? esc(x.tel) : ""].filter(Boolean).join(" · ") : "");
+
+/* ====================== Laden und Rechnen ====================== */
+async function allesLaden() {
+  const [st, px, pr, ei] = await Promise.all([leseJSON("stamm/studierende.json", { personen: [] }), leseJSON("stamm/praxislehrpersonen.json", { personen: [] }), leseJSON("stamm/praktika.json", { praktika: [] }), leseJSON("stamm/einstellungen.json", null)]);
+  S.stamm = { studis: st.personen || [], pxl: px.personen || [], praktika: pr.praktika || [], einst: ei, schultypen: px.schultypen || {}, stand: pr.stand || "", quelle: pr.quelle || "" };
+  const liste = [], gesehen = new Set();
+  try {
+    const w = await verzeichnis("eintraege");
+    for await (const [, d] of w.entries()) { if (d.kind !== "directory") continue;
+      for await (const [n, f] of d.entries()) { if (f.kind !== "file" || !n.endsWith(".json")) continue;
+        try { const e = JSON.parse(await (await f.getFile()).text()); if (e.id && !gesehen.has(e.id)) { gesehen.add(e.id); liste.push(e); } } catch (err) {} } }
+  } catch (e) {}
+  liste.sort((a, b) => a.zeit.localeCompare(b.zeit));
+  S.eintraege = liste; S.geladen = true;
+  berechnen(); zeichnen();
+}
+function setze(obj, felder) {
+  for (const [k, v] of Object.entries(felder)) {
+    if (k.includes(".")) { const [a, b] = k.split("."); obj[a] = Object.assign({}, obj[a] || {}); if (v === null) delete obj[a][b]; else obj[a][b] = v; }
+    else if (v === null) delete obj[k]; else obj[k] = v;
+  }
+}
+const SAMMLUNG = { studi: "studis", pxl: "pxl", praktikum: "praktika" };
+function berechnen() {
+  const kopie = (l) => Object.fromEntries(l.map((x) => [x.id, JSON.parse(JSON.stringify(x))]));
+  D = { studis: kopie(S.stamm.studis), pxl: kopie(S.stamm.pxl), praktika: kopie(S.stamm.praktika), einst: Object.assign(JSON.parse(JSON.stringify(EINST_STD)), S.stamm.einst || {}), hist: {}, notizen: {} };
+  for (const e of S.eintraege) {
+    if (e.typ === "bemerkung") { (D.notizen[e.ref] ||= []).push(e); continue; }
+    if (e.typ === "einst") { setze(D.einst, e.felder); continue; }
+    const sam = D[SAMMLUNG[e.art]]; if (!sam) continue;
+    if (e.typ === "neu") sam[e.ref] = Object.assign({ id: e.ref, neu: e.zeit }, e.felder);
+    else if (e.typ === "aendern" && sam[e.ref]) setze(sam[e.ref], e.felder);
+    else continue;
+    (D.hist[e.art + ":" + e.ref] ||= []).push(e);
+  }
+  for (const p of Object.values(D.praktika)) if (p.geloescht) delete D.praktika[p.id];
+}
+async function eintragen(e) {
+  if (!S.ich) { meldung("Bitte oben rechts «Ich bin» wählen."); return false; }
+  const zeit = new Date().toISOString(), id = zeit.replace(/[:.]/g, "") + "-" + Math.random().toString(36).slice(2, 7);
+  const x = Object.assign({ id, zeit, wer: S.ich }, e);
+  try { await schreibeJSON(`eintraege/${S.ich}/${id}.json`, x); } catch (err) { meldung("Speichern ging nicht: " + err.message); return false; }
+  S.eintraege.push(x); berechnen(); zeichnen(); return x;
+}
+const neueId = (v) => v + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+/* Abgeleitet */
+const praktikaVon = (sid) => Object.values(D.praktika).filter((p) => p.student === sid).sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999));
+/* Wahlpflichtbereich (Übersicht Verläufe): Individuelle Spezialisierung (IVA) oder Berufspädagogik;
+   Erst- und Zweitfach alternativ Additum inkl. Projektarbeit */
+const WAHL = [["", "noch offen"], ["IVA", "Individuelle Spezialisierung (IVA)"], ["BPAED", "Berufspädagogik"], ["ADD", "Additum inkl. Projektarbeit"]];
+function wahlVon(s) { return s.wahl || (s.wpb ? "BPAED" : ""); }
+function anwendbar(s, art) {
+  const pr = D.einst.profile[s.profil], w = wahlVon(s);
+  if (art === "IVA" && (w === "BPAED" || w === "ADD")) return false;
+  if (art === "PA" && w === "ADD") return true;
+  return !pr || art in pr;
+}
+function sollUmfang(s, art) { const pr = D.einst.profile[s.profil]; return pr && pr[art] && /\d/.test(pr[art]) ? pr[art] : ""; }
+/* Synergie mit der Berufspädagogik (Ablauf Praktika): ein Teil des BP an einer BMS / Berufsfachschule */
+function synergieRegel(s) {
+  if (s.profil === "Monofach") return { ok: true, text: "18 L. am Gymnasium + 18 L. an BMS / Berufsfachschule (selbst organisiert)", umfang: "18 L. + 18 L. BMS" };
+  if (s.profil === "Erstfach") return { ok: true, text: "18 L. an BMS / Berufsfachschule (selbst organisiert)", umfang: "18 L. BMS" };
+  if (["Zweitfach", "Zusatzfach"].includes(s.profil)) return { ok: false, text: `im ${s.profil} nicht gestattet` };
+  return { ok: true, text: "je nach Profil" };
+}
+function bpHinweis(p) {
+  const s = D.studis[p.student], t = [];
+  if (p.bms) { const r = synergieRegel(s); t.push(`Synergie BMS${p.bmsText ? ": " + p.bmsText : ""}${!r.ok ? " ⚠ " + r.text : wahlVon(s) !== "BPAED" ? " ⚠ Wahlpflicht ist nicht Berufspädagogik" : ""}`); }
+  if (p.verkuerzt) t.push("verkürzt (bewilligt)");
+  return t.join(" · ");
+}
+/* Archiv: ausdrücklich archiviert, oder (ohne eigenen Entscheid) abgeschlossen/exmatrikuliert */
+function istArchiv(s) { return s.archiv === true || (s.archiv !== false && ["abgeschlossen", "exmatrikuliert"].includes(s.stand)); }
+/* alle Bausteine des Profils sind da und abgeschlossen */
+function alleFertig(s) {
+  const pl = praktikaVon(s.id); if (!pl.length) return false;
+  return pl.every((p) => p.status === "abgeschlossen") && ARTEN.filter((a) => a.k !== "DP" && anwendbar(s, a.k)).every((a) => pl.some((p) => p.art === a.k));
+}
+async function archivieren(id, an) {
+  const s = D.studis[id], f = { archiv: an };
+  if (an && ["aktiv", "unterbruch"].includes(s.stand)) f.stand = "abgeschlossen";
+  if (!an && s.stand === "abgeschlossen") f.stand = "aktiv";
+  if (await eintragen({ typ: "aendern", art: "studi", ref: id, felder: f })) meldung(an ? `${nameVon(s)} ist im Archiv.` : `${nameVon(s)} ist wieder bei den Studierenden.`);
+}
+/* Vertretung: zugeteilt bleibt «doz», wer vertreten (selbst besucht) hat, steht in «vertretung» – beide werden abgerechnet */
+function dozText(p) { return ((p.doz || []).length ? p.doz.join("+") : "???") + ((p.vertretung || []).length ? " · vertr. " + p.vertretung.join("+") : ""); }
+function istMeins(p) { return (p.doz || []).includes(S.ich) || (p.vertretung || []).includes(S.ich); }
+const beteiligt = (p, k) => (p.doz || []).includes(k) || (p.vertretung || []).includes(k);
+function betreuungenVon(xid) { return Object.values(D.praktika).filter((p) => p.pxl === xid).sort((a, b) => semKey(b.semester) - semKey(a.semester)); }
+function verfVon(x, sem) { return (x.verfuegbar || {})[sem] || {}; }
+/* Passt die PxL für diese Praktikumsart? (Kopfzeilen der Excel-Liste: PP nur an Kantonsschule; FMS/BMS: max. SP oder BP, nicht beides) */
+function passtNicht(x, p) {
+  if (!x || !p) return "";
+  if (p.art === "PP" && x.schultyp !== "Gymnasium") return "PP nur an Kantonsschule";
+  if (["FMS", "BMS"].includes(x.schultyp) && ["SP", "BP"].includes(p.art)) {
+    const andere = praktikaVon(p.student).find((q) => q.id !== p.id && ["SP", "BP"].includes(q.art) && D.pxl[q.pxl] && ["FMS", "BMS"].includes(D.pxl[q.pxl].schultyp));
+    if (andere) return `${x.schultyp}: schon ${andere.art} an ${D.pxl[andere.pxl].schultyp}`;
+  }
+  return "";
+}
+
+
+/* ====================== Lektionen aus der Ausbildungsvereinbarung ======================
+   Word (.docx): Tabelle mit Kopfzeile «Art | Datum | Klasse | von | bis | Lektionen | Raum» wird genau gelesen;
+   sonst (und bei PDF) werden Zeilen mit Datum und Zeitspanne gesucht. Immer nur ein Vorschlag – man prüft ihn im Fenster.
+   Gelesen wird im Browser; die Datei verlässt den Rechner nicht (nur die Lese-Bibliothek kommt von cdnjs). */
+const BIB = { pdf: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", zip: "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" };
+function skriptLaden(url) { return new Promise((ok, nein) => { if (document.querySelector(`script[src="${url}"]`) && (window.pdfjsLib || window.JSZip)) return ok(); const s = document.createElement("script"); s.src = url; s.onload = ok; s.onerror = () => nein(new Error("Lese-Bibliothek nicht geladen (Internet?)")); document.head.appendChild(s); }); }
+async function avbZeilen(datei) {
+  const n = datei.name.toLowerCase();
+  if (n.endsWith(".pdf")) return pdfZeilen(datei);
+  if (n.endsWith(".docx")) return docxZeilen(datei);
+  return null;
+}
+async function pdfZeilen(datei) {
+  await skriptLaden(BIB.pdf);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = BIB.pdf.replace("pdf.min.js", "pdf.worker.min.js");
+  const doc = await pdfjsLib.getDocument({ data: await datei.arrayBuffer() }).promise, zeilen = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const tc = await (await doc.getPage(i)).getTextContent(), gruppen = [];
+    for (const it of tc.items) {
+      if (!it.str || !it.str.trim()) continue;
+      const y = it.transform[5]; let g = gruppen.find((g) => Math.abs(g.y - y) < 3);
+      if (!g) gruppen.push((g = { y, teile: [] }));
+      g.teile.push({ x: it.transform[4], ende: it.transform[4] + (it.width || 0), t: it.str });
+    }
+    gruppen.sort((a, b) => b.y - a.y);
+    for (const g of gruppen) {
+      g.teile.sort((a, b) => a.x - b.x);
+      let t = "", ende = null;
+      for (const s of g.teile) { t += ende === null ? "" : s.x - ende > 12 ? " | " : s.x - ende > 1 ? " " : ""; t += s.t; ende = s.ende; }
+      zeilen.push({ text: t.replace(/\s+/g, " ").trim() });
+    }
+  }
+  return zeilen;
+}
+async function docxZeilen(datei) {
+  await skriptLaden(BIB.zip);
+  const zip = await JSZip.loadAsync(await datei.arrayBuffer());
+  const xml = new DOMParser().parseFromString(await zip.file("word/document.xml").async("string"), "application/xml");
+  const absatz = (p) => [...p.getElementsByTagName("*")].map((n) => (n.nodeName === "w:t" ? n.textContent : n.nodeName === "w:tab" || n.nodeName === "w:br" ? " " : "")).join("").replace(/\s+/g, " ").trim();
+  const zeilen = [];
+  const lauf = (knoten) => {
+    for (const k of knoten.children) {
+      if (k.nodeName === "w:p") { const t = absatz(k); if (t) zeilen.push({ text: t }); }
+      else if (k.nodeName === "w:tbl") {
+        for (const tr of [...k.children].filter((x) => x.nodeName === "w:tr")) {
+          const zellen = [...tr.children].filter((x) => x.nodeName === "w:tc").map((tc) => [...tc.children].filter((x) => x.nodeName === "w:p").map(absatz).filter(Boolean));
+          zeilen.push({ text: zellen.map((z) => z.join(" ")).join(" | "), zellen: zellen.map((z) => z.join(" ")) });
+          // Zellen mit mehreren Absätzen (z.B. eine Lektion pro Absatz): jeden Absatz auch einzeln
+          zellen.forEach((z, i) => { if (z.length > 1) for (const a of z) zeilen.push({ text: (zellen[0][0] || "") + " | " + a, teil: true }); });
+          for (const tc of [...tr.children].filter((x) => x.nodeName === "w:tc")) for (const inner of [...tc.children].filter((x) => x.nodeName === "w:tbl")) lauf({ children: [inner] });
+        }
+      } else if (k.children && k.children.length && ["w:body", "w:sdt", "w:sdtContent"].includes(k.nodeName)) lauf(k);
+    }
+  };
+  lauf(xml.getElementsByTagName("w:body")[0]);
+  return zeilen;
+}
+const ZEIT2 = /(\d{1,2})[.:h](\d{2})\s*(?:Uhr)?\s*(?:–|—|-|−|·|bis)\s*(\d{1,2})[.:h](\d{2})/;
+const DATUM_RE = /(?<![\d.:])(\d{1,2})\.\s?(\d{1,2})\.?(?:\s?(\d{4}|\d{2}))?(?![\d:])/;
+const hhmm = (h, m) => String(Number(h)).padStart(2, "0") + ":" + m;
+function datumMitJahr(tag, mon, jahr, sem) {
+  tag = Number(tag); mon = Number(mon); if (!(tag >= 1 && tag <= 31 && mon >= 1 && mon <= 12)) return "";
+  let j;
+  if (jahr) { j = Number(jahr); if (j < 100) j += 2000; }
+  else { const m = /^(HS|FS)(\d\d)$/.exec(sem || semHeute()); j = 2000 + Number(m[2]); if (m[1] === "HS" && mon <= 7) j++; }
+  const d = new Date(Date.UTC(j, mon - 1, tag)); return d.getUTCMonth() === mon - 1 ? d.toISOString().slice(0, 10) : "";
+}
+function lektionenAus(zeilen, sem) {
+  const L = []; let modus = "", aktiv = false, kopf = null, letzteKlasse = { U: "", H: "" };
+  for (const z of zeilen) {
+    const t = z.text;
+    if (/Die Beteiligten|Datum\s*\/\s*Unterschrift/i.test(t)) break;
+    // feste Tabelle (neue Vorlage): Kopfzeile erkennen
+    if (z.zellen && z.zellen.some((c) => /^datum$/i.test(c.trim())) && z.zellen.some((c) => /^(von|zeit|unterrichtszeit)/i.test(c.trim()))) {
+      const ix = (re) => z.zellen.findIndex((c) => re.test(c.trim()));
+      kopf = { art: ix(/^art|^hosp/i), datum: ix(/^datum/i), klasse: ix(/^klasse/i), von: ix(/^von/i), bis: ix(/^bis/i), zeit: ix(/zeit/i), anzahl: ix(/^lektion|^anzahl/i), raum: ix(/^raum|^zimmer/i), n: z.zellen.length };
+      aktiv = true; if (!modus) modus = "U"; continue;
+    }
+    if (kopf && z.zellen && z.zellen.length === kopf.n) {
+      const c = (k) => (kopf[k] >= 0 ? (z.zellen[kopf[k]] || "").trim() : "");
+      const dm = DATUM_RE.exec(c("datum")); if (!dm) continue;
+      let von = "", bis = "";
+      const zm = ZEIT2.exec(c("von") + " - " + c("bis")) || ZEIT2.exec(c("zeit"));
+      if (zm) { von = hhmm(zm[1], zm[2]); bis = hhmm(zm[3], zm[4]); }
+      else { const a = /(\d{1,2})[.:h](\d{2})/.exec(c("von")), b = /(\d{1,2})[.:h](\d{2})/.exec(c("bis")); if (a) von = hhmm(a[1], a[2]); if (b) bis = hhmm(b[1], b[2]); }
+      const art = /hosp/i.test(c("art")) ? "H" : kopf.art >= 0 ? "U" : modus || "U";
+      L.push({ art, datum: datumMitJahr(dm[1], dm[2], dm[3], sem), von, bis, klasse: c("klasse"), anzahl: (c("anzahl").match(/\d+/) || [""])[0], raum: c("raum").replace(/^(Zi\.?|Zimmer|Raum)\s*/i, "") });
+      continue;
+    }
+    if (z.teil && kopf) continue;
+    // Abschnitt erkennen (Label der Vorlage)
+    if ((/Hospitation/i.test(t) && !/mit Hospitation|inkl\.? Hospitation/i.test(t)) || /Anzahl und Daten der(?! Zeiten)/i.test(t)) { modus = "H"; aktiv = true; }
+    else if (/zum Unterricht|Zeiten der|Daten und Zeiten|Unterricht\s*:/i.test(t)) { modus = "U"; aktiv = true; }
+    else if (/Umfang/i.test(t)) aktiv = true;
+    if (!aktiv) continue;
+    let rest = t;
+    const zm = ZEIT2.exec(rest); let von = "", bis = "", zeitPos = -1;
+    if (zm) { von = hhmm(zm[1], zm[2]); bis = hhmm(zm[3], zm[4]); zeitPos = zm.index; }
+    const dm = DATUM_RE.exec(zeitPos >= 0 ? rest.slice(0, zeitPos) : rest);
+    if (!dm) continue;
+    const datum = datumMitJahr(dm[1], dm[2], dm[3], sem); if (!datum) continue;
+    if (!zm && modus !== "H") continue;     // ohne Uhrzeit nur Hospitationen
+    const nachDatum = rest.slice(dm.index + dm[0].length, zeitPos >= 0 ? zeitPos : undefined);
+    const danach = zeitPos >= 0 ? rest.slice(zeitPos + zm[0].length) : nachDatum;
+    let notiz = "";
+    const oder = /oder\s+(\d{1,2}\.\s?\d{1,2}\.?(?:\d{2,4})?)/i.exec(nachDatum); if (oder) notiz = "oder " + oder[1];
+    const lekt = /\(?\s*(\d+|eine|zwei|drei)\s*Lektion(?:en)?\s*\)?/i.exec(danach + " " + nachDatum);
+    const raumM = /(?:Zi\.?|Zimmer|Raum)\s*([\w.-]+)/i.exec(danach + " " + nachDatum);
+    let klasse = (zeitPos >= 0 ? nachDatum : nachDatum.split(/\bLektion/i)[0])
+      .replace(/oder\s+\d{1,2}\.\s?\d{1,2}\.?(?:\d{2,4})?/i, "").replace(/\(?\s*(\d+|eine|zwei|drei)\s*Lektion(?:en)?\s*\)?/i, "").replace(/(?:Zi\.?|Zimmer|Raum)\s*[\w.-]+/i, "")
+      .replace(/^[\s,;|:.]+|[\s,;|:]+$/g, "").replace(/\s*\|\s*/g, " ").replace(/\s+\d+$/, "").replace(/[\s,;|:]+$/, "").trim();
+    if (!klasse) klasse = letzteKlasse[modus || "U"]; else letzteKlasse[modus || "U"] = klasse;
+    let anzahl = lekt ? ({ eine: "1", zwei: "2", drei: "3" }[lekt[1].toLowerCase()] || lekt[1]) : "", raum = raumM ? raumM[1] : "";
+    if (zeitPos >= 0 && (!lekt || !raumM)) { // Tabelle im PDF: nach der Zeit «2 | 231» = Lektionen, Raum
+      const zahlen = danach.replace(/\(.*?\)/g, "").match(/\b\d{1,4}\b/g) || [];
+      if (!anzahl && zahlen.length && Number(zahlen[0]) <= 4) anzahl = zahlen.shift();
+      if (!raum && zahlen.length) raum = zahlen[0];
+    }
+    L.push({ art: modus === "H" ? "H" : "U", datum, von, bis, klasse, anzahl, raum, ...(notiz ? { notiz } : {}) });
+  }
+  const gesehen = new Set();
+  return L.filter((l) => { const k = [l.art, l.datum, l.von, l.klasse].join("|"); if (gesehen.has(k)) return false; gesehen.add(k); return l.datum; }).sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von));
+}
+async function lektionenLesen(id, datei) {
+  try {
+    const zeilen = await avbZeilen(datei);
+    if (!zeilen) return lektionenDialog(id, [], `«${datei.name}» kann die Seite nicht lesen (nur PDF oder Word .docx) – bitte die Lektionen von Hand eintragen.`);
+    const l = lektionenAus(zeilen, D.praktika[id].semester);
+    lektionenDialog(id, l, l.length ? `${l.length} Lektionen in der Ausbildungsvereinbarung gefunden – bitte prüfen und ergänzen.` : "In der Datei wurden keine Lektionen mit Datum und Uhrzeit gefunden (Scan? andere Vorlage?). Bitte von Hand eintragen.");
+  } catch (e) { lektionenDialog(id, [], "Lesen ging nicht: " + e.message + " – bitte von Hand eintragen."); }
+}
+
+/* Fenster: Lektionen prüfen / von Hand eintragen */
+function lektionZeile(l, i) {
+  return `<tr data-i="${i}"><td><select class="l_art"><option value="U" ${l.art !== "H" ? "selected" : ""}>Unterricht</option><option value="H" ${l.art === "H" ? "selected" : ""}>Hospitation</option></select></td>
+  <td><input class="l_datum" type="date" value="${esc(l.datum || "")}"></td><td><input class="l_klasse" value="${esc(l.klasse || "")}" size="9"></td>
+  <td><input class="l_von" type="time" value="${esc(l.von || "")}"></td><td><input class="l_bis" type="time" value="${esc(l.bis || "")}"></td>
+  <td><input class="l_anzahl" value="${esc(l.anzahl || "")}" size="2"></td><td><input class="l_raum" value="${esc(l.raum || "")}" size="5"></td>
+  <td><input class="l_notiz" value="${esc(l.notiz || "")}" size="10"></td><td><button class="klein" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
+}
+function lektionenDialog(id, vorschlag, hinweis) {
+  const p = D.praktika[id], s = D.studis[p.student], l = vorschlag || p.lektionen || [];
+  dialog(`Lektionen · ${esc(ART[p.art].name)} · ${esc(nameVon(s))}`,
+    `${hinweis ? `<div class="hinweis">${esc(hinweis)}</div>` : ""}${vorschlag && (p.lektionen || []).length ? `<div class="warnung">Übernehmen ersetzt die ${p.lektionen.length} bisher eingetragenen Lektionen.</div>` : ""}
+    <div style="overflow:auto"><table class="lekttab"><thead><tr><th>Art</th><th>Datum</th><th>Klasse</th><th>von</th><th>bis</th><th>L.</th><th>Raum</th><th>Notiz</th><th></th></tr></thead>
+    <tbody id="lektKoerper">${l.map(lektionZeile).join("")}</tbody></table></div>
+    <p><button class="klein" onclick="$('#lektKoerper').insertAdjacentHTML('beforeend', lektionZeile({art:'U'}, 0))">＋ Lektion</button>
+    <span class="leise klein">Ohne Jahr gelesene Daten sind aus dem Semester ergänzt (${esc(p.semester || semHeute())}).</span></p>`,
+    `${p.avbDatei ? `<button style="margin-right:auto" onclick="avbOeffnen(${esc(JSON.stringify(p.avbDatei))})">📄 AVB ansehen</button>` : ""}<button onclick="$('#dlg').close()">Später</button><button class="haupt" onclick="lektionenSpeichern('${id}')">Übernehmen</button>`);
+  $("#dlg").dataset.praktikum = "";
+}
+async function lektionenSpeichern(id) {
+  const l = [...document.querySelectorAll("#lektKoerper tr")].map((tr) => { const v = (k) => tr.querySelector(".l_" + k).value.trim(); return { art: v("art"), datum: v("datum"), klasse: v("klasse"), von: v("von"), bis: v("bis"), anzahl: v("anzahl"), raum: v("raum"), ...(v("notiz") ? { notiz: v("notiz") } : {}) }; })
+    .filter((x) => x.datum).sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von));
+  if (await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { lektionen: l } })) { meldung(`${l.length} Lektionen gespeichert.`); praktikumDialog(id); }
+}
+
+/* Lektionen anzeigen; eine anklicken = als Unterrichtsbesuch wählen */
+const WT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const wochentag = (iso) => WT[new Date(iso + "T12:00:00").getDay()];
+const istBesuch = (p, l) => p.ub === l.datum && (!p.ubZeit || p.ubZeit === l.von);
+function lektionenListe(p, knopf = true) {
+  const l = p.lektionen || []; if (!l.length) return "";
+  const u = l.filter((x) => x.art !== "H"), heute = heuteIso();
+  return `<table class="lekttab klein">${l.map((x) => {
+    const rand = x.art !== "H" && (x === u[0] || x === u[u.length - 1]) && u.length > 2, b = istBesuch(p, x);
+    return `<tr class="${b ? "gewaehlt" : ""}" style="${x.datum < heute ? "opacity:.5" : ""}"><td>${x.art === "H" ? "<span class='leise'>Hosp.</span>" : ""}</td><td>${wochentag(x.datum)} ${datumKurz(x.datum)}</td><td>${esc(x.von)}${x.bis ? "–" + esc(x.bis) : ""}</td><td>${esc(x.klasse || "")}</td><td>${x.raum ? "Zi. " + esc(x.raum) : ""}</td>
+    <td>${x.notiz ? `<span class="mini">${esc(x.notiz)}</span>` : ""}${rand ? `<span class="mini" title="Laut Ablauf: Unterrichtsbesuch nach Möglichkeit nicht in der ersten und letzten Stunde"> ${x === u[0] ? "erste" : "letzte"} Lektion</span>` : ""}</td>
+    <td>${b ? "<b>Besuch</b>" : knopf && x.art !== "H" ? `<button class="klein" onclick="event.stopPropagation(); besuchWaehlen('${p.id}', ${l.indexOf(x)})">als Besuch</button>` : ""}</td></tr>`;
+  }).join("")}</table>`;
+}
+async function besuchWaehlen(id, i) {
+  const p = D.praktika[id], l = p.lektionen[i];
+  const f = { ub: l.datum, ubZeit: l.von || null, ubBis: l.bis || null, ubOrt: [l.klasse && "Kl. " + l.klasse, l.raum && "Zi. " + l.raum].filter(Boolean).join(", ") || null };
+  if (p.status !== "abgeschlossen") f.status = "ub_geplant";
+  if (p.status !== "abgeschlossen" && !p.avb) f.avb = true;
+  if (!(await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f }))) return;
+  besuchMitteilen(id);
+}
+function besuchMitteilen(id) {
+  const p = D.praktika[id], s = D.studis[p.student], x = D.pxl[p.pxl];
+  dialog(`Besuch eingetragen · ${esc(nameVon(s))}`,
+    `<p><b>${esc(ART[p.art].name)}</b> · ${wochentag(p.ub)} ${ubText(p)}${p.ubOrt ? " · " + esc(p.ubOrt) : ""}${x ? `<br>${esc(pxlKurz(x))} · ${esc(schuleKurz(x))}` : ""}</p>
+    ${!s.mail ? `<div class="warnung">Von ${esc(nameVon(s))} ist keine E-Mail-Adresse eingetragen (Angaben ändern). Die Mail geht vorerst nur an die PxL.</div>` : ""}
+    ${x && !x.mail ? `<div class="warnung">Von der PxL fehlt die E-Mail-Adresse.</div>` : ""}
+    <p class="leise klein">Die Mail öffnet sich als Entwurf im Mailprogramm – abgeschickt wird erst dort. Der Outlook-Termin wird als Datei gespeichert; Doppelklick nimmt ihn in den Kalender.</p>`,
+    `<button onclick="$('#dlg').close()">Schliessen</button><button onclick="icsLaden('${id}')">📅 Outlook-Termin</button><a class="knopf haupt" href="${besuchMail(p)}" onclick="setTimeout(() => $('#dlg').close(), 300)">✉ Mail an Studierende und PxL</a>`);
+}
+function besuchMail(p) {
+  const s = D.studis[p.student], x = D.pxl[p.pxl], team = D.einst.team || [], ich = team.find((t) => t.kuerzel === S.ich);
+  const an = [s.mail, x && x.mail].filter(Boolean).map((m) => m.trim()), cc = [...(p.doz || []), ...(p.vertretung || [])].filter((k, i, a) => k !== S.ich && a.indexOf(k) === i).map((k) => (team.find((t) => t.kuerzel === k) || {}).mail).filter(Boolean);
+  const pp = p.art === "PP", wann = `${wochentag(p.ub)}, ${datumKurz(p.ub)}${p.ubZeit ? ", " + p.ubZeit + (p.ubBis ? "–" + p.ubBis : "") + " Uhr" : ""}`;
+  const betreff = `${pp ? "Prüfungslektion" : "Unterrichtsbesuch"} ${ART[p.art].name} – ${wann}`;
+  const text = `Hallo ${s.vorname}${x ? ", hallo " + x.vorname : ""}\n\n${pp ? `Die Prüfungslektion im Prüfungspraktikum findet am ${wann}${p.ubOrt ? " (" + p.ubOrt + ")" : ""} statt. Anschliessend: 30 Minuten Vorbereitung, dann das Kolloquium (max. 30 Minuten Präsentation, max. 30 Minuten Nachfragen).\nBitte das Diplomdossier mindestens 24 Stunden vor der Lektion per E-Mail an mich und an die Praxislehrperson schicken.`
+    : `Ich komme am ${wann}${p.ubOrt ? " (" + p.ubOrt + ")" : ""} zum Unterrichtsbesuch im ${ART[p.art].name}. Im Anschluss findet ein Auswertungsgespräch statt (30–45 Minuten).\nBitte die Unterrichtsplanung mindestens 24 Stunden vor der Lektion per E-Mail an mich und an die Praxislehrperson schicken.`}\n\nHerzliche Grüsse\n${ich ? ich.name : ""}`;
+  return `mailto:${an.map(encodeURIComponent).join(",")}?${cc.length ? "cc=" + cc.map(encodeURIComponent).join(",") + "&" : ""}subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}`;
+}
+function icsLaden(id) {
+  const p = D.praktika[id], s = D.studis[p.student], x = D.pxl[p.pxl];
+  if (!p.ub) return meldung("Noch kein Besuchstermin.");
+  const t = (iso, hm) => iso.replace(/-/g, "") + "T" + (hm || "08:00").replace(":", "") + "00";
+  const ende = p.ubBis || (p.ubZeit ? hhmm(Number(p.ubZeit.slice(0, 2)) + 1, p.ubZeit.slice(3)) : "09:00");
+  const zeilen = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//PH Luzern Mathe//Praktika S2//DE", "BEGIN:VEVENT",
+    "UID:" + id + "-" + p.ub + "@praktika-s2", "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z",
+    "DTSTART;TZID=Europe/Zurich:" + t(p.ub, p.ubZeit), "DTEND;TZID=Europe/Zurich:" + t(p.ub, ende),
+    "SUMMARY:" + `${p.art === "PP" ? "Prüfungslektion" : "UB"} ${p.art} ${s.name} ${s.vorname}`.replace(/[,;]/g, " "),
+    "LOCATION:" + [x && schuleKurz(x), p.ubOrt].filter(Boolean).join(" · ").replace(/[,;]/g, " "),
+    "DESCRIPTION:" + [x && "PxL " + pxlKurz(x) + (x.mail ? " " + x.mail.trim() : ""), s.mail && "Stud. " + s.mail].filter(Boolean).join("\\n").replace(/[,;]/g, " "),
+    "END:VEVENT", "END:VCALENDAR"];
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([zeilen.join("\r\n")], { type: "text/calendar" }));
+  a.download = dateiName(`UB ${s.name} ${p.art} ${p.ub}.ics`); document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------- Reiter «Lektionen»: alle Praktikumslektionen eines Semesters nach Wochen ---------- */
+function vLektionen() {
+  const sem = S.f.lekSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 1), heute = heuteIso();
+  const alle = [];
+  for (const p of Object.values(D.praktika)) {
+    const s = D.studis[p.student]; if (!s || istArchiv(s) || p.semester !== sem) continue;
+    if (S.f.nurMeine && S.ich && !istMeins(p)) continue;
+    (p.lektionen || []).forEach((l, i) => { if (S.f.lekNurUB && !istBesuch(p, l)) return; if (S.f.lekOhneH && l.art === "H") return; alle.push({ p, l, i, s }); });
+    if (p.ub && !(p.lektionen || []).some((l) => istBesuch(p, l))) alle.push({ p, l: { art: "U", datum: p.ub, von: p.ubZeit || "", bis: p.ubBis || "", klasse: p.ubOrt || "" }, i: -1, s });
+  }
+  const montag = (iso) => { const d = new Date(iso + "T12:00:00"), w = (d.getDay() + 6) % 7; d.setDate(d.getDate() - w); return d.toISOString().slice(0, 10); };
+  const wochen = {}; for (const e of alle) (wochen[montag(e.l.datum)] ||= []).push(e);
+  const ohne = Object.values(D.praktika).filter((p) => p.semester === sem && ART[p.art].praktikum && D.studis[p.student] && !istArchiv(D.studis[p.student]) && !(p.lektionen || []).length && p.status !== "abgeschlossen" && (!S.f.nurMeine || !S.ich || istMeins(p)));
+  const eintrag = ({ p, l, i, s }) => { const b = i < 0 || istBesuch(p, l), x = D.pxl[p.pxl];
+    return `<div class="lek ${b ? "ub" : ""} ${l.art === "H" ? "hosp" : ""}" style="${l.datum < heute ? "opacity:.5" : ""}" title="${esc([nameVon(s), ART[p.art].name, x && pxlKurz(x) + " · " + schuleKurz(x), l.klasse && "Kl. " + l.klasse, l.raum && "Zi. " + l.raum, b ? "Besuch" : i >= 0 && l.art !== "H" ? "Klick: als Besuch wählen" : ""].filter(Boolean).join("\n"))}"
+      onclick="${b ? `praktikumDialog('${p.id}')` : i >= 0 && l.art !== "H" ? `if (confirm('Diese Lektion als Besuch wählen?')) besuchWaehlen('${p.id}', ${i})` : `praktikumDialog('${p.id}')`}">
+      <b>${esc(l.von || "?")}${l.bis ? "–" + esc(l.bis) : ""}</b> ${b ? "· <b>Besuch</b>" : l.art === "H" ? "· Hosp." : ""}<br>${esc(s.name)} ${esc((s.vorname || "")[0] || "")}. · ${p.art} · ${esc(dozText(p))}<br><span class="mini">${esc(x ? schuleKurz(x) : "")}${l.klasse ? " · " + esc(l.klasse) : ""}</span></div>`; };
+  const tage = ["Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  return `<h2>Lektionen und Besuche</h2>
+  <div class="leiste"><span class="gr">Semester ${sems.map((x) => `<span class="chip ${x === sem ? "an" : ""}" onclick="filter('lekSem','${x}')">${x}</span>`).join("")}</span>
+  <span class="gr"><span class="chip ${S.f.nurMeine ? "an" : ""}" onclick="filter('nurMeine', ${!S.f.nurMeine})">nur meine</span><span class="chip ${S.f.lekNurUB ? "an" : ""}" onclick="filter('lekNurUB', ${!S.f.lekNurUB})">nur Besuche</span><span class="chip ${S.f.lekOhneH ? "an" : ""}" onclick="filter('lekOhneH', ${!S.f.lekOhneH})">ohne Hospitationen</span></span>
+  <span class="leise klein">Lektionen kommen aus den Ausbildungsvereinbarungen. Klick auf eine Lektion = als Besuch wählen.</span></div>
+  ${ohne.length ? `<div class="hinweis klein"><b>Noch ohne Lektionen (${ohne.length}):</b> ${ohne.map((p) => `<span class="link" onclick="praktikumDialog('${p.id}')">${esc(D.studis[p.student].name)} ${p.art}</span>`).join(" · ")}</div>` : ""}
+  ${Object.keys(wochen).sort().map((w) => { const tagListe = tage.filter((t, k) => k < 5 || wochen[w].some((e) => wochentag(e.l.datum) === t));
+    return `<h3>Woche ab ${wochentag(w)} ${datumKurz(w)}</h3><div class="woche" style="grid-template-columns:repeat(${tagListe.length},minmax(150px,1fr))">${tagListe.map((t) => { const d = (() => { const x = new Date(w + "T12:00:00"); x.setDate(x.getDate() + tage.indexOf(t)); return x.toISOString().slice(0, 10); })(); const l = wochen[w].filter((e) => e.l.datum === d).sort((a, b) => (a.l.von || "").localeCompare(b.l.von || ""));
+      return `<div class="tag"><div class="tkopf">${t} ${datumKurz(d)}</div>${l.map(eintrag).join("") || `<div class="mini" style="padding:4px">–</div>`}</div>`; }).join("")}</div>`; }).join("") || `<p class="leise">Für ${sem} sind noch keine Lektionen eingetragen.</p>`}`;
+}
+
+/* ====================== Zeichnen ====================== */
+/* Rollen: der Admin sieht alles; die Zuteilung sehen die Zuteilenden und der Admin; Meldungen nur der Admin.
+   Achtung: Ausblenden ist kein Datenschutz – wer den Ordner hat, kann die Dateien lesen. */
+const istAdmin = () => !S.ich || (D.einst.admin || ["alh"]).includes(S.ich);
+const adminText = () => (D.einst.admin || ["alh"]).map((k) => ((D.einst.team || []).find((t) => t.kuerzel === k) || { name: k }).name).join(", ");
+const darfSehen = (k) => (k === "meldungen" ? istAdmin() : k === "zuteilung" ? istAdmin() || (D.einst.zuteilung || []).includes(S.ich) : true);
+const REITER = [["start", "Start"], ["studierende", "Studierende"], ["pxl", "Praxislehrpersonen"], ["zuteilung", "Zuteilung"], ["meldungen", "Meldungen"], ["einstellungen", "⚙ Einstellungen"]];
+function zeichnen() {
+  // frühere Reiter (Verläufe, Lektionen) sind in Studierende bzw. Start aufgegangen
+  if (S.ansicht === "verlaeufe") S.ansicht = "studierende"; if (S.ansicht === "lektionen") S.ansicht = "start";
+  if (S.ansicht === "buchhaltung") S.ansicht = "meldungen";
+  if (!darfSehen(S.ansicht)) S.ansicht = "start";
+  if (S.ansicht === "studierende" && S.f.studAnsicht !== "kacheln" && (S.f.sem || S.f.status)) { S.f.sem = ""; S.f.status = ""; }
+  const team = D.einst.team || [];
+  $("#ich").innerHTML = `<option value="">– wählen –</option>` + team.map((t) => `<option value="${esc(t.kuerzel)}" ${t.kuerzel === S.ich ? "selected" : ""}>${esc(t.kuerzel)} · ${esc(t.name)}</option>`).join("");
+  $("#beispielMarke").innerHTML = S.beispiel ? `<span class="marke warn">Beispieldaten – nichts wird gespeichert</span>` : "";
+  $("#ordnerstatus").innerHTML = S.ordner ? (S.beispiel ? "" : `Ordner verbunden · ${S.eintraege.length} Einträge`) : "";
+  $("#nav").innerHTML = S.ordner ? REITER.filter(([k]) => darfSehen(k)).map(([k, t]) => `<button class="${S.ansicht === k ? "an" : ""}${k === "einstellungen" ? " rechts" : ""}" onclick="zeige('${k}')">${t}</button>`).join("") : "";
+  const m = $("#main");
+  if (!S.ordner) return (m.innerHTML = willkommen());
+  if (S.detail) personZeichnen();
+  m.innerHTML = ({ start: vStart, verlaeufe: vStudierende, studierende: vStudierende, pxl: vPxl, zuteilung: vZuteilung, lektionen: vStart, buchhaltung: vMeldungen, meldungen: vMeldungen, einstellungen: vEinstellungen }[S.ansicht] || vStart)();
+}
+function zeige(k) { S.ansicht = k; merke("ansicht", k); zeichnen(); window.scrollTo(0, 0); }
+function ichWaehlen(k) { S.ich = k; merke("ich", k); zeichnen(); }
+function filter(k, v) { S.f[k] = v; merke("filter", JSON.stringify(S.f)); zeichnen(); }
+function filterTipp(k, v) { S.f[k] = v; merke("filter", JSON.stringify(S.f)); clearTimeout(filterTipp.t); filterTipp.t = setTimeout(() => { const pos = document.activeElement && document.activeElement.id; zeichnen(); if (pos) { const el = document.getElementById(pos); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } } }, 250); }
+const chips = (k, werte) => werte.map(([v, t]) => `<span class="chip ${S.f[k] === v ? "an" : ""}" onclick="filter('${k}', ${JSON.stringify(v).replace(/"/g, "&quot;")})">${t}</span>`).join("");
+
+function willkommen() {
+  return `<div class="zentral"><h2>Buchhaltung Sek II · Mathematik</h2>
+  <div class="karte"><p>Die App liest und schreibt im Ordner <b>«Buchhaltung Sek II Mathematik»</b> auf SwitchDrive
+  (oberste Ebene). Darin liegen <code>Daten/stamm</code> (aus den Excel-Listen eingelesen)
+  und <code>Daten/eintraege</code> – jede Änderung als eigene kleine Datei, je Person ein Unterordner. Niemand überschreibt etwas von anderen.</p>
+  ${S.ordnerWartet ? `<p><button class="haupt" onclick="zugriffErlauben()">Zugriff auf «${esc(S.ordnerWartet.name)}» erlauben</button></p>` : ""}
+  <p><button class="${S.ordnerWartet ? "" : "haupt"}" onclick="ordnerWaehlen()">Ordner wählen …</button>
+  &nbsp; <button onclick="beispielLaden()">Beispiel ansehen (erfundene Daten)</button></p>
+  <p class="leise klein">Nur Chrome oder Edge. Die Excel-Listen bleiben unverändert; sie werden nur gelesen.</p></div></div>`;
+}
+
+/* ---------- Start ---------- */
+function vStart() {
+  const sem = semHeute(), heute = heuteIso(), meine = S.f.nurMeine && S.ich;
+  const alle = Object.values(D.praktika).filter((p) => D.studis[p.student] && !istArchiv(D.studis[p.student]));
+  const sicht = alle.filter((p) => !meine || istMeins(p) || (!(p.doz || []).length && (D.einst.zuteilung || []).includes(S.ich)));
+  const pxlInfo = (p) => p.pxl && D.pxl[p.pxl] ? ` · ${esc(pxlKurz(D.pxl[p.pxl]))}` : p.pxlText ? ` · ${esc(p.pxlText)}` : "";
+  const zeile = (p, extra = "") => `<li><span class="link" onclick="personZeigen('${p.student}')">${esc(nameVon(D.studis[p.student]))}</span> · <span class="link" onclick="praktikumDialog('${p.id}')">${p.art} ${esc(p.semester || "")}</span>${extra}</li>`;
+  // Termine: Unterrichtsbesuche, Prüfungslektionen, Vorbesprechungen, Diplomprüfungen
+  const termine = [];
+  for (const p of sicht) {
+    if (p.ub && p.ub >= heute && p.status !== "abgeschlossen") termine.push({ p, d: p.ub, z: p.ubZeit || "", bis: p.ubBis || "", was: p.art === "PP" ? "Prüfungslektion" : "Unterrichtsbesuch " + p.art, ort: p.ubOrt });
+    if (p.vbDatum && p.vbDatum >= heute) termine.push({ p, d: p.vbDatum, z: p.vbZeit || "", was: "Vorbesprechung " + p.art, ort: p.vbOrt });
+    if (p.art === "DP" && p.datum && p.datum >= heute) termine.push({ p, d: p.datum, z: "", was: "Diplomprüfung" + (p.nachpruefung ? " (Nachprüfung)" : "") });
+  }
+  termine.sort((a, b) => (a.d + a.z).localeCompare(b.d + b.z));
+  const aufgaben = [
+    ["vorbei", "Besuch vorbei – abschliessen?", sicht.filter((p) => p.ub && p.ub < heute && ART[p.art].praktikum && p.status !== "abgeschlossen"), (p) => zeile(p, ` · UB ${ubText(p)} <button class="klein" onclick="schnell('${p.id}','abgeschlossen')">✓ abgeschlossen</button>`)],
+    ["suchen", "PxL finden", sicht.filter((p) => ART[p.art].praktikum && ["offen", "pxl_suchen"].includes(p.status) && p.semester && semKey(p.semester) <= semKey(sem) + 1), (p) => zeile(p, p.wunsch ? ` · <span class="leise">Wunsch: ${esc(p.wunsch)}</span>` : "")],
+    ["angefragt", "Angefragt", sicht.filter((p) => p.status === "angefragt"), (p) => zeile(p, pxlInfo(p))],
+    ["avb", "AVB ausstehend", sicht.filter((p) => p.status === "zusage"), (p) => zeile(p, pxlInfo(p) + ` <button class="klein" onclick="avbWaehlen('${p.id}')">↑ AVB hochladen</button>`)],
+    ["vb", "Vorbesprechung vereinbaren", sicht.filter((p) => ART[p.art].praktikum && ["zusage", "avb"].includes(p.status) && !p.vbDatum && !p.ub), (p) => zeile(p, pxlInfo(p))],
+    ["ub", "UB vereinbaren", sicht.filter((p) => p.status === "avb" && !p.ub), (p) => zeile(p, pxlInfo(p) + (p.avbDatei ? " · " + avbLink(p) : ""))],
+    ["arbeiten", "Arbeiten in Arbeit", sicht.filter((p) => ["PA", "IVA"].includes(p.art) && ["laeuft", "abgegeben"].includes(p.status)), (p) => zeile(p, `${p.thema ? " · " + esc(p.thema) : ""}${p.abgabe ? ` · <span class="leise">Abgabe ${esc(p.abgabe)}</span>` : ""}`)],
+    ["ohnesem", "Noch ohne Semester", alle.filter((p) => !p.semester && p.status !== "abgeschlossen" && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, p.umfang ? ` · <span class="leise">${esc(p.umfang)}</span>` : "")],
+    ["archiv", "Fertig – ins Archiv?", Object.values(D.studis).filter((s) => !istArchiv(s) && alleFertig(s)), (s) => `<li><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span> <button class="klein" onclick="archivieren('${s.id}', true)">ins Archiv</button></li>`],
+  ];
+  const offen = aufgaben.find((x) => x[0] === S.f.startOffen && x[2].length);
+  return `<h2>Was ansteht</h2>
+  <div class="leiste"><span class="gr"><span class="chip ${S.f.nurMeine ? "an" : ""}" onclick="filter('nurMeine', ${!S.f.nurMeine})">nur meine${S.ich ? " (" + esc(S.ich) + ")" : ""}</span></span><span class="leise klein">Semester ${sem}</span></div>
+  ${!S.ich ? `<div class="warnung">Oben rechts «Ich bin» wählen.</div>` : ""}
+  <div class="karte termine"><h3>${meine ? "Meine nächsten Termine" : "Nächste Termine"}</h3>
+    ${termine.length ? `<table>${termine.slice(0, 8).map((t) => { const x = D.pxl[t.p.pxl]; return `<tr class="klickbar" onclick="praktikumDialog('${t.p.id}')"><td style="white-space:nowrap;width:110px"><b>${wochentag(t.d)} ${datumKurz(t.d)}</b><br>${esc(t.z)}${t.bis ? "–" + esc(t.bis) : ""}</td><td><span class="link" onclick="event.stopPropagation(); personZeigen('${t.p.student}')">${esc(nameVon(D.studis[t.p.student]))}</span> · ${esc(t.was)}${(t.p.doz || []).length > 1 || (t.p.vertretung || []).length ? ` <span class="leise">(${esc(dozText(t.p))})</span>` : ""}<br><span class="mini">${esc([x && schuleKurz(x), t.ort].filter(Boolean).join(" · "))}</span></td></tr>`; }).join("")}</table>${termine.length > 8 ? `<p class="mini">… und ${termine.length - 8} weitere</p>` : ""}` : `<p class="leise">Keine Termine.</p>`}</div>
+  <div class="kacheln-start">${aufgaben.map(([k, t, l]) => `<div class="aufg ${l.length ? "" : "null"} ${offen && offen[0] === k ? "an" : ""}" ${l.length ? `onclick="filter('startOffen', '${offen && offen[0] === k ? "" : k}')"` : ""}><span class="zahl">${l.length}</span><br><span class="klein">${t}</span></div>`).join("")}</div>
+  ${offen ? `<div class="karte"><h3>${offen[1]}</h3><ul>${offen[2].map(offen[3]).join("")}</ul></div>` : `<p class="leise klein">Eine Kachel anklicken, um die Liste zu sehen.</p>`}`;
+}
+async function schnell(id, status) {
+  const p = D.praktika[id], f = { status };
+  if (status === "avb") f.avb = true;
+  await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f });
+}
+
+/* ---------- Verläufe (das Raster der Excel-Liste) ---------- */
+function studisGefiltert() {
+  const q = S.f.suche.trim().toLowerCase();
+  return Object.values(D.studis).filter((s) => {
+    if (S.f.stand === "aktiv" && istArchiv(s)) return false;
+    if (S.f.stand === "fertig" && !istArchiv(s)) return false;
+    if (q && !`${s.name} ${s.vorname} ${s.wohnort} ${s.start}`.toLowerCase().includes(q) && !praktikaVon(s.id).some((p) => (D.pxl[p.pxl] && pxlKurz(D.pxl[p.pxl]).toLowerCase().includes(q)) || (p.thema || "").toLowerCase().includes(q))) return false;
+    const pl = praktikaVon(s.id);
+    if (S.f.doz && !pl.some((p) => (S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)))) return false;
+    if (S.f.sem && !pl.some((p) => p.semester === S.f.sem)) return false;
+    if (S.f.status && !pl.some((p) => statusInfo(p)[2] === S.f.status)) return false;
+    return true;
+  }).sort((a, b) => semKey(a.start) - semKey(b.start) || a.name.localeCompare(b.name));
+}
+function kachel(p) {
+  const si = statusInfo(p), x = D.pxl[p.pxl];
+  const ab = (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)));
+  const fertig = p.status === "abgeschlossen", z = [];
+  if (ART[p.art].praktikum) {
+    if (x) z.push(`${esc(pxlKurz(x))} <span class="leise">· ${esc(schuleKurz(x))}</span>`); else if (p.pxlText) z.push(`<span class="leise">${esc(p.pxlText)}</span>`);
+    if (!fertig) z.push(`<span class="leise">${esc(si[1])}</span>`);
+    if (p.vbDatum && !fertig) z.push(`VB ${datumKurz(p.vbDatum)}${p.vbZeit ? ", " + esc(p.vbZeit) : ""}`);
+    if (p.ub) z.push(`${p.art === "PP" ? "PL" : "UB"} ${ubText(p)}`);
+    const u = [p.umfang && esc(p.umfang), p.art === "BP" && bpHinweis(p) && `<b>${esc(bpHinweis(p))}</b>`, avbLink(p)].filter(Boolean);
+    if (u.length) z.push(u.join(" · "));
+  } else {
+    if (p.art === "DP") { if (p.datum) z.push(`${datumKurz(p.datum)} · ${dpTermin(p)}`); if (p.nachpruefung) z.push("Nachprüfung"); }
+    if (p.thema) z.push(esc(p.thema));
+    if (p.abgabe && !fertig) z.push(`<span class="leise">Abgabe ${esc(p.abgabe)}</span>`);
+    if (p.art === "IVA" && Number(p.ects) === 5) z.push("5 ECTS");
+  }
+  return `<div class="kachel st-${si[2]}" style="${ab ? "opacity:.38" : ""}" title="${esc(si[1])}" onclick="praktikumDialog('${p.id}')">
+    <div class="k1"><span>${esc(dozText(p))} · ${esc(p.semester || "–")}${p.aeb ? " · aeB" : ""}</span><span>${fertig ? "✓" : ""}</span></div>${z.join("<br>")}</div>`;
+}
+function vVerlaeufe() {
+  const liste = studisGefiltert(), sems = semesterListe();
+  const zellen = (s) => ARTEN.map((a) => {
+    const pl = praktikaVon(s.id).filter((p) => p.art === a.k);
+    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na">–</div></td>`;
+    return `<td class="zelle">${pl.map(kachel).join("")}${!pl.length ? `<div class="plus" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${a.k}${sollUmfang(s, a.k) ? " · " + esc(sollUmfang(s, a.k)) : ""}</div>` : ""}</td>`;
+  }).join("");
+  return `<h2>Studierende</h2>${ansichtUmschalter()}
+  <div class="leiste">
+    <span class="gr">${chips("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</span>
+    <span class="gr">Doz ${chips("doz", [["", "alle"], ...(D.einst.team || []).map((t) => [t.kuerzel, t.kuerzel]), ["beide", "beide"]])}</span>
+    <span class="gr">Semester <select onchange="filter('sem', this.value)"><option value="">alle</option>${sems.map((x) => `<option ${S.f.sem === x ? "selected" : ""}>${x}</option>`).join("")}</select></span>
+    <span class="gr">Stand ${chips("status", [["", "alle"], ["weiss", "<span class='punkt st-weiss'></span>zu organisieren"], ["rot", "<span class='punkt st-rot'></span>PxL"], ["gelb", "<span class='punkt st-gelb'></span>läuft"], ["gruen", "<span class='punkt st-gruen'></span>fertig"]])}</span>
+    <span class="gr"><input id="suche" placeholder="Name, Ort, PxL, Thema" value="${esc(S.f.suche)}" oninput="filterTipp('suche', this.value)"></span>
+    <span class="leise klein">${liste.length} Personen</span>
+  </div>
+  <div style="overflow:auto;margin-top:8px"><table class="raster"><thead><tr><th>Name</th>${ARTEN.map((a) => `<th>${a.name}</th>`).join("")}</tr></thead><tbody>
+  ${liste.map((s) => `<tr><td style="min-width:150px"><span class="link" onclick="personZeigen('${s.id}')"><b>${esc(s.name)}</b> ${esc(s.vorname)}</span>${(D.notizen[s.id] || []).length || s.bemerkung ? ` <span title="hat Bemerkungen">✎</span>` : ""}<div class="mini">${esc(s.start || "")}${s.profil ? " · " + esc(s.profil) : ""}${s.stand === "unterbruch" ? ` · <span class="nein">Unterbruch</span>` : ""}</div>${!istArchiv(s) && alleFertig(s) ? `<div class="mini ok">✓ fertig · <span class="link" onclick="archivieren('${s.id}', true)">ins Archiv</span></div>` : ""}</td>${zellen(s)}</tr>`).join("")}
+  </tbody></table></div>
+  <p><button onclick="studiDialog()">＋ neue Person</button></p>`;
+}
+
+/* ---------- Studierende ---------- */
+const ansichtUmschalter = () => `<div class="umschalter">${[["liste", "☰ Liste"], ["kacheln", "▦ Verlauf wie Excel"]].map(([k, t]) => `<span class="chip ${(S.f.studAnsicht || "liste") === k ? "an" : ""}" onclick="filter('studAnsicht','${k}')">${t}</span>`).join("")}</div>`;
+function vStudierende() {
+  const liste = studisGefiltert();
+  // je Baustein ein farbiges Kästchen; Details in der Seitenleiste
+  const pillen = (s) => ARTEN.map((a) => {
+    const pl = praktikaVon(s.id).filter((p) => p.art === a.k);
+    if (!pl.length) return anwendbar(s, a.k) ? `<span class="pille leer" title="${a.name}: noch nicht angelegt">${a.k}</span>` : `<span class="pille weg"></span>`;
+    return pl.map((p) => { const x = D.pxl[p.pxl]; return `<span class="pille st-${statusInfo(p)[2]}${p.bms ? " bms" : ""}" title="${esc([a.name + (p.semester ? " " + p.semester : ""), statusInfo(p)[1], dozText(p), x && pxlKurz(x), p.ub && "UB " + ubText(p), p.art === "BP" && bpHinweis(p)].filter(Boolean).join(" · "))}">${a.k}</span>`; }).join("");
+  }).join("");
+  const naechstes = (s) => {
+    const p = praktikaVon(s.id).filter((p) => p.status !== "abgeschlossen").sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999))[0];
+    if (!p) return alleFertig(s) && !istArchiv(s) ? `<span class="ok">✓ alles abgeschlossen</span> <button class="klein" onclick="event.stopPropagation(); archivieren('${s.id}', true)">ins Archiv</button>` : "";
+    return `<b>${p.art}</b> ${esc(p.semester || "ohne Semester")} · ${esc(statusInfo(p)[1])}${p.ub ? ` · <b>UB ${wochentag(p.ub)} ${datumKurz(p.ub)}</b>` : ""}${p.doz && p.doz.length ? ` <span class="leise">· ${esc(dozText(p))}</span>` : ""}`;
+  };
+  if (S.f.studAnsicht === "kacheln") return vVerlaeufe();
+  return `<h2>Studierende</h2>${ansichtUmschalter()}
+  <div class="leiste"><span class="gr">${chips("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</span>
+  <span class="gr">Doz ${chips("doz", [["", "alle"], ...(D.einst.team || []).map((t) => [t.kuerzel, t.kuerzel]), ["beide", "beide"]])}</span>
+  <span class="gr"><input id="suche" placeholder="Name, Ort, PxL, Thema" value="${esc(S.f.suche)}" oninput="filterTipp('suche', this.value)"></span>
+  <button onclick="studiDialog()">＋ neue Person</button><span class="leise klein">${liste.length} Personen · Klick öffnet alles zur Person</span></div>
+  <table class="studliste"><thead><tr><th>Name</th><th>Beginn</th><th>Bausteine</th><th>Als Nächstes</th></tr></thead><tbody>
+  ${liste.map((s) => `<tr class="klickbar" onclick="personZeigen('${s.id}')"><td><b>${esc(s.name)}</b> ${esc(s.vorname)}${(D.notizen[s.id] || []).length || s.bemerkung ? ` <span class="leise" title="hat Bemerkungen">✎</span>` : ""}${s.stand === "unterbruch" ? ` <span class="mini nein">Unterbruch</span>` : ""}</td><td class="leise">${esc(s.start || "")}</td><td style="white-space:nowrap">${pillen(s)}</td><td class="klein">${naechstes(s)}</td></tr>`).join("")}
+  </tbody></table>
+  <p class="leise klein"><span class="pille st-weiss">SP</span> zu organisieren <span class="pille st-rot">SP</span> PxL suchen/angefragt <span class="pille st-gelb">SP</span> läuft <span class="pille st-gruen">SP</span> abgeschlossen <span class="pille leer">SP</span> noch nicht angelegt <span class="pille st-gelb bms">BP</span> mit Synergie BMS</p>`;
+}
+
+/* ---------- Praxislehrpersonen ---------- */
+function vPxl() {
+  const sem = S.f.pxlSem || semHeute(), q = S.f.pxlSuche.trim().toLowerCase(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 1);
+  const typen = ["Gymnasium", "FMS", "BMS"];
+  const liste = Object.values(D.pxl).filter((x) => (!S.f.pxlTyp || x.schultyp === S.f.pxlTyp) && (!q || JSON.stringify([x.name, x.vorname, x.schule, x.kanton, x.hinweise]).toLowerCase().includes(q))
+    && (!S.f.pxlVerf || (verfVon(x, sem).stand || "") === (S.f.pxlVerf === "?" ? "" : S.f.pxlVerf)));
+  const zeile = (x) => {
+    const v = verfVon(x, sem), jetzt = betreuungenVon(x.id).filter((p) => p.semester === sem), frueher = betreuungenVon(x.id).filter((p) => semKey(p.semester) < semKey(sem));
+    return `<tr><td><span class="link" onclick="pxlDialog('${x.id}')"><b>${esc(x.name)}</b> ${esc(x.vorname)}</span>${x.kurz && x.kurz.trim() ? ` <span class="nein klein" title="${esc(x.kurz)}">!</span>` : ""}${(D.notizen[x.id] || []).length ? ` <span class="leise" title="${esc(D.notizen[x.id].at(-1).text)}">✎</span>` : ""}</td>
+    <td>${esc(schuleKurz(x))} <span class="leise">(${esc(x.kanton)})</span><div class="mini">${esc(x.reise)}</div></td><td class="klein">${esc(x.hinweise)}</td>
+    <td><select onchange="verfSetzen('${x.id}','${sem}',this.value)">${VERF.map(([k, t]) => `<option value="${k}" ${(v.stand || "") === k ? "selected" : ""}>${t}</option>`).join("")}</select>${v.notiz ? `<div class="mini">${esc(v.notiz)}</div>` : ""}</td>
+    <td class="klein">${jetzt.map((p) => `<div><span class="link" onclick="praktikumDialog('${p.id}')">${p.art} ${esc(D.studis[p.student] ? D.studis[p.student].name : "?")}</span> <span class="punkt st-${statusInfo(p)[2]}"></span></div>`).join("") || `<span class="leise">–</span>`}</td>
+    <td class="klein" title="${esc(frueher.map((p) => `${p.semester} ${p.art} ${D.studis[p.student] ? D.studis[p.student].name : "?"}`).join("\n"))}">${frueher.length ? `${frueher.length}× <span class="leise">zuletzt ${esc(frueher[0].semester)}</span>` : `<span class="leise">–</span>`}</td></tr>`;
+  };
+  return `<h2>Praxislehrpersonen</h2>
+  <div class="leiste"><span class="gr">Verfügbarkeit für <select onchange="filter('pxlSem', this.value)">${sems.map((x) => `<option ${x === sem ? "selected" : ""}>${x}</option>`).join("")}</select></span>
+  <span class="gr">${chips("pxlVerf", [["", "alle"], ["ja", "verfügbar"], ["angefragt", "angefragt"], ["vielleicht", "vielleicht"], ["nein", "nein"], ["?", "unbekannt"]])}</span>
+  <span class="gr">${chips("pxlTyp", [["", "alle Schulen"], ...typen.map((t) => [t, t])])}</span>
+  <span class="gr"><input id="pxlsuche" placeholder="Name, Schule, Kanton" value="${esc(S.f.pxlSuche)}" oninput="filterTipp('pxlSuche', this.value)"></span>
+  <button onclick="S.nachPxl = null; pxlDialog()">＋ neue PxL</button><span class="leise klein">${liste.length} von ${Object.keys(D.pxl).length}</span></div>
+  ${typen.filter((t) => liste.some((x) => x.schultyp === t)).map((t) => `<h3>${t} <span class="leise klein" style="font-family:inherit">${esc(S.stamm.schultypen[t] || "")}</span></h3>
+  <table><thead><tr><th>Name</th><th>Schule · Reiseweg</th><th>Hinweise</th><th>Verfügbar ${sem}</th><th>Betreut ${sem}</th><th>Früher</th></tr></thead><tbody>
+  ${liste.filter((x) => x.schultyp === t).sort((a, b) => a.kanton.localeCompare(b.kanton) || a.name.localeCompare(b.name)).map(zeile).join("")}</tbody></table>`).join("")}`;
+}
+async function verfSetzen(xid, sem, stand) {
+  const alt = verfVon(D.pxl[xid], sem);
+  await eintragen({ typ: "aendern", art: "pxl", ref: xid, felder: { ["verfuegbar." + sem]: stand || alt.notiz ? Object.assign({}, alt, { stand }) : null } });
+}
+
+/* ---------- Zuteilung ---------- */
+function vZuteilung() {
+  const sem = S.f.zuSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 1);
+  const darf = (D.einst.zuteilung || []).includes(S.ich);
+  const pr = Object.values(D.praktika).filter((p) => p.semester === sem && D.studis[p.student]);
+  const offen = pr.filter((p) => ART[p.art].praktikum && ["offen", "pxl_suchen", "angefragt"].includes(p.status));
+  const ohneSem = Object.values(D.praktika).filter((p) => !p.semester && p.status !== "abgeschlossen" && D.studis[p.student] && D.studis[p.student].stand === "aktiv" && !istArchiv(D.studis[p.student]));
+  const belegt = {}; for (const p of pr) if (p.pxl) (belegt[p.pxl] ||= []).push(p);
+  const team = D.einst.team || [];
+  const last = team.map((t) => { const meine = pr.filter((p) => (p.doz || []).includes(t.kuerzel)); const std = meine.length; return { t, n: meine.length, std, arten: ARTEN.map((a) => [a.k, meine.filter((p) => p.art === a.k).length]).filter((x) => x[1]) }; });
+  const optionen = (p) => {
+    const vorher = new Set(praktikaVon(p.student).filter((q) => q.id !== p.id).map((q) => q.pxl));
+    const rang = (x) => { const v = verfVon(x, sem).stand || ""; return (passtNicht(x, p) ? 40 : 0) + ({ ja: 0, vielleicht: 1, angefragt: 2, "": 3, nein: 20 }[v] ?? 3) + (belegt[x.id] && !belegt[x.id].includes(p) ? 5 : 0) + (vorher.has(x.id) ? 10 : 0); };
+    const l = Object.values(D.pxl).sort((a, b) => rang(a) - rang(b) || a.name.localeCompare(b.name));
+    return `<option value="">– PxL wählen –</option>` + l.map((x) => {
+      const v = verfVon(x, sem).stand, nicht = passtNicht(x, p), schon = (belegt[x.id] || []).filter((q) => q.id !== p.id);
+      const zusatz = [v ? "verfügbar: " + v : "", nicht, schon.length ? "schon: " + schon.map((q) => q.art + " " + D.studis[q.student].name).join(", ") : "", vorher.has(x.id) ? "war schon PxL dieser Person" : "", x.reise].filter(Boolean).join(" · ");
+      return `<option value="${x.id}" ${p.pxl === x.id ? "selected" : ""}>${v === "ja" ? "✓ " : v === "nein" || nicht ? "✗ " : ""}${esc(x.name)} ${esc(x.vorname)} – ${esc(schuleKurz(x))} (${esc(x.kanton)})${zusatz ? " · " + esc(zusatz) : ""}</option>`;
+    }).join("");
+  };
+  const zeile = (p) => {
+    const s = D.studis[p.student], x = D.pxl[p.pxl];
+    return `<tr><td><span class="link" onclick="personZeigen('${s.id}')"><b>${esc(s.name)}</b> ${esc(s.vorname)}</span><div class="mini">${esc([s.profil, s.wohnort && "wohnt " + s.wohnort, s.pensum].filter(Boolean).join(" · "))}</div></td>
+    <td><span class="link" onclick="praktikumDialog('${p.id}')">${p.art}</span><div class="mini">${esc(p.umfang || sollUmfang(s, p.art))}</div>${p.art === "BP" && bpHinweis(p) ? `<div class="mini"><b>${esc(bpHinweis(p))}</b></div>` : ""}</td>
+    <td class="klein">${esc(p.wunsch || "")}</td>
+    <td>${team.map((t) => `<label class="klein" style="white-space:nowrap"><input type="checkbox" ${(p.doz || []).includes(t.kuerzel) ? "checked" : ""} ${darf ? "" : "disabled"} onchange="dozSetzen('${p.id}','${t.kuerzel}',this.checked)"> ${t.kuerzel}</label>`).join(" ")}</td>
+    <td><select class="pxl" ${darf ? "" : "disabled"} onchange="pxlSetzen('${p.id}', this.value)">${optionen(p)}</select>${p.pxlText && !p.pxl ? `<div class="mini">Excel: ${esc(p.pxlText)}</div>` : ""}${x && passtNicht(x, p) ? `<div class="mini nein">⚠ ${esc(passtNicht(x, p))}</div>` : ""}</td>
+    <td><span class="punkt st-${statusInfo(p)[2]}"></span>${esc(statusInfo(p)[1])}<div style="margin-top:3px">${darf ? `${p.status !== "angefragt" && x ? `<button class="klein" onclick="schnell('${p.id}','angefragt')">angefragt</button> ` : ""}${x ? `<button class="klein" onclick="schnell('${p.id}','zusage')">Zusage ✓</button> <a class="klein link" href="${mailAnfrage(p)}">✉ Entwurf</a>` : ""}` : ""}</div></td></tr>`;
+  };
+  return `<h2>Zuteilung</h2>
+  <div class="leiste"><span class="gr">Semester ${sems.map((x) => `<span class="chip ${x === sem ? "an" : ""}" onclick="filter('zuSem','${x}')">${x}</span>`).join("")}</span>
+  ${darf ? "" : `<span class="nein klein">Zuteilen dürfen: ${esc((D.einst.zuteilung || []).join(", "))} – du siehst die Liste nur.</span>`}</div>
+  <div class="karten" style="grid-template-columns:repeat(auto-fill,minmax(370px,1fr))">
+  ${last.map((l) => pensumKarte(sem, l.t, pr, darf)).join("")}
+  <div class="karte"><b>${sem}</b> · ${pr.filter((p) => ART[p.art].praktikum).length} Praktika, ${pr.filter((p) => !ART[p.art].praktikum).length} Arbeiten<div class="mini">${STATUS_P.map((st) => [st, pr.filter((p) => ART[p.art].praktikum && p.status === st[0]).length]).filter((x) => x[1]).map(([st, n]) => `<span class="punkt st-${st[2]}"></span>${n} ${st[1]}`).join("<br>")}</div></div>
+  </div>
+  <h3>Noch ohne Zusage (${offen.length})</h3>
+  ${offen.length ? `<table class="zuteilung"><thead><tr><th>Studierende</th><th>Art</th><th>Wunsch</th><th>Doz</th><th>Praxislehrperson <span class="leise klein">(✓ verfügbar zuerst, ✗ passt nicht)</span></th><th>Stand</th></tr></thead><tbody>${offen.map(zeile).join("")}</tbody></table>` : `<p class="leise">Für ${sem} ist alles zugeteilt.</p>`}
+  <details><summary><h3 style="display:inline">Schon zugeteilt in ${sem} (${pr.filter((p) => !offen.includes(p)).length})</h3></summary>
+  <table><thead><tr><th>Studierende</th><th>Art</th><th>Doz</th><th>PxL</th><th>UB</th><th>Stand</th></tr></thead><tbody>
+  ${pr.filter((p) => !offen.includes(p)).sort((a, b) => ARTEN.findIndex((x) => x.k === a.art) - ARTEN.findIndex((x) => x.k === b.art)).map((p) => `<tr class="klickbar" onclick="praktikumDialog('${p.id}')"><td>${esc(nameVon(D.studis[p.student]))}</td><td>${p.art}</td><td>${esc(dozText(p))}</td><td>${esc(D.pxl[p.pxl] ? pxlKurz(D.pxl[p.pxl]) + " · " + schuleKurz(D.pxl[p.pxl]) : p.thema || p.pxlText || "")}</td><td>${ubText(p)}</td><td><span class="punkt st-${statusInfo(p)[2]}"></span>${esc(statusInfo(p)[1])} ${avbLink(p)}</td></tr>`).join("")}</tbody></table></details>
+  ${ohneSem.length ? `<details><summary><h3 style="display:inline">Noch ohne Semester (${ohneSem.length})</h3></summary><table><thead><tr><th>Studierende</th><th>Art</th><th>Umfang</th><th>Semester festlegen</th></tr></thead><tbody>${ohneSem.map((p) => `<tr><td>${esc(nameVon(D.studis[p.student]))}</td><td><span class="link" onclick="praktikumDialog('${p.id}')">${p.art}</span></td><td class="klein">${esc(p.umfang || "")}</td><td><select ${darf ? "" : "disabled"} onchange="semSetzen('${p.id}', this.value)"><option value="">–</option>${sems.map((x) => `<option>${x}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></details>` : ""}
+  ${eingangHtml()}`;
+}
+/* Pensum: wie viele Begleitungen je Doz im Semester geplant sind (einst «pensum.<Semester>-<Kürzel>») */
+/* Gezählt wird in Praktika, nicht in Stunden: SP und BP zusammen, PP für sich (so wird jährlich gemeldet). */
+const KATEGORIEN = [["SPBP", "SP + BP", "Standort- und Berufspraktika"], ["PP", "PP", "Prüfungspraktika"], ["aeB", "aeB", "Besuch in eigener Klasse (aeB)"], ["PA", "PA", "Projektarbeiten"], ["IVA", "IVA", "Wahlpflichtarbeiten"], ["DP", "DP", "Diplomprüfungen"]];
+const PENSUM_ARTEN = ["SP", "BP", "PP", "PA", "IVA", "DP"];   // wie im Abrechnungsformular: SP und BP getrennt
+function kategorie(p) { return p.aeb ? "aeB" : ["SP", "BP"].includes(p.art) ? "SPBP" : p.art; }
+/* Anteil einer Doz-Person an einer Begleitung: zu zweit je 1 oder je ½ (Einstellung «beide») */
+function anteil(p, k) {
+  if ((p.vertretung || []).includes(k) && !(p.doz || []).includes(k)) return 1;      // Vertretung: doppelt abgerechnet
+  if (!(p.doz || []).includes(k)) return 0; return p.doz.length > 1 && D.einst.beide === "halb" ? 0.5 : 1;
+}
+const zahl = (n) => (n ? String(Math.round(n * 10) / 10).replace(".", ",") : "·");
+function pensumVon(sem, k) { return (D.einst.pensum || {})[sem + "-" + k] || {}; }
+function pensumKarte(sem, t, pr, darf) {
+  const plan = pensumVon(sem, t.kuerzel), meine = pr.filter((p) => (p.doz || []).includes(t.kuerzel));
+  return `<div class="karte"><b>${esc(t.kuerzel)}</b> · ${esc(t.name)}
+    <table class="pensum"><tr><th></th>${PENSUM_ARTEN.map((a) => `<th>${a}</th>`).join("")}</tr>
+    <tr><td class="leise">geplant</td>${PENSUM_ARTEN.map((a) => `<td>${darf ? `<input type="number" min="0" value="${esc(plan[a] ?? "")}" onchange="pensumSetzen('${sem}','${t.kuerzel}','${a}',this.value)">` : esc(plan[a] ?? "–")}</td>`).join("")}</tr>
+    <tr><td class="leise">zugeteilt</td>${PENSUM_ARTEN.map((a) => { const n = meine.filter((p) => p.art === a && !p.aeb).reduce((x, p) => x + anteil(p, t.kuerzel), 0), soll = Number(plan[a]) || 0; return `<td class="${soll && n > soll ? "nein" : soll && n === soll ? "ok" : ""}">${zahl(n)}</td>`; }).join("")}</tr></table>
+    ${plan.notiz || darf ? `<input class="mini" style="width:100%;margin-top:4px" placeholder="Notiz zum Pensum" value="${esc(plan.notiz || "")}" ${darf ? `onchange="pensumSetzen('${sem}','${t.kuerzel}','notiz',this.value)"` : "disabled"}>` : ""}</div>`;
+}
+async function pensumSetzen(sem, k, art, wert) {
+  const neu = Object.assign({}, pensumVon(sem, k)); if (wert === "" || wert === null) delete neu[art]; else neu[art] = art === "notiz" ? wert : Number(wert);
+  await eintragen({ typ: "einst", felder: { ["pensum." + sem + "-" + k]: neu } });
+}
+async function dozSetzen(id, k, an) { const p = D.praktika[id], doz = new Set(p.doz || []); an ? doz.add(k) : doz.delete(k); await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { doz: (D.einst.team || []).map((t) => t.kuerzel).filter((x) => doz.has(x)) } }); }
+async function pxlSetzen(id, xid) { const p = D.praktika[id], f = { pxl: xid || null }; if (xid && ["offen", "pxl_suchen"].includes(p.status)) f.status = "angefragt"; if (!xid && p.status === "angefragt") f.status = "pxl_suchen"; await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f }); }
+async function semSetzen(id, sem) { if (sem) await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { semester: sem } }); }
+function mailAnfrage(p) {
+  const s = D.studis[p.student], x = D.pxl[p.pxl], ich = (D.einst.team || []).find((t) => t.kuerzel === S.ich);
+  const betreff = `Anfrage ${ART[p.art].name} ${p.semester} – Mathematik Sek II PH Luzern`;
+  const text = `Liebe/r ${x.vorname} ${x.name}\n\nWir suchen für ${s.vorname} ${s.name} einen Platz für das ${ART[p.art].name} (${p.umfang || sollUmfang(s, p.art) || ""}) im ${p.semester}${p.wunsch ? ", Wunsch: " + p.wunsch : ""}.\nKönntest du dir vorstellen, die Begleitung zu übernehmen?\n\nHerzliche Grüsse\n${ich ? ich.name : ""}`;
+  return `mailto:${encodeURIComponent(x.mail.trim())}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}`;
+}
+
+/* ---------- Buchhaltung (ersetzt die ZÄHLENWENN-Formeln) ---------- */
+/* Studienjahr: HS26 + FS27 = «26/27» */
+function sjVon(sem) { const m = /^(HS|FS)(\d\d)$/.exec(sem || ""); if (!m) return ""; const y = Number(m[2]) - (m[1] === "FS" ? 1 : 0); return `${String(y).padStart(2, "0")}/${String(y + 1).padStart(2, "0")}`; }
+function semsVonSj(sj) { const [a, b] = sj.split("/"); return ["HS" + a, "FS" + b]; }
+function vBuchhaltung() {
+  const team = D.einst.team || [], heute = semHeute();
+  const jahre = [...new Set([...Object.values(D.praktika).map((p) => sjVon(p.semester)).filter(Boolean), sjVon(heute)])].sort().reverse();
+  const sj = S.f.buchSj || sjVon(heute), sems = semsVonSj(sj);
+  const pr = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student]);
+  const zaehl = (liste, k, kat, nurFertig) => liste.filter((p) => kategorie(p) === kat && (!nurFertig || p.status === "abgeschlossen")).reduce((n, p) => n + anteil(p, k), 0);
+  const ohneDoz = pr.filter((p) => !(p.doz || []).length && ["SPBP", "PP", "aeB"].includes(kategorie(p)));
+  const plan = (k, art) => sems.reduce((n, sm) => n + (Number(pensumVon(sm, k)[art]) || 0), 0);
+  const effektiv = (l, k, art, nurFertig) => l.filter((p) => p.art === art && !p.aeb && (!nurFertig || p.status === "abgeschlossen")).reduce((n, p) => n + anteil(p, k), 0);
+  const karte = (t) => {
+    const l = pr.filter((p) => beteiligt(p, t.kuerzel)), k = t.kuerzel;
+    const zeile = (titel, arten) => { const e = arten.reduce((n, a) => n + effektiv(l, k, a), 0), f = arten.reduce((n, a) => n + effektiv(l, k, a, true), 0), g = arten.reduce((n, a) => n + plan(k, a), 0);
+      return `<tr><td>${titel}</td><td>${g ? zahl(g) : "–"}</td><td><b>${zahl(e)}</b>${e !== f ? ` <span class="mini">(${zahl(f).replace("·", "0")} fertig)</span>` : ""}</td><td class="${g && e - g ? (e > g ? "ok" : "nein") : ""}">${g ? (e - g > 0 ? "+" : "") + zahl(e - g).replace("·", "0") : ""}</td></tr>`; };
+    const liste = (kat) => l.filter((p) => kategorie(p) === kat).sort((a, b) => semKey(a.semester) - semKey(b.semester) || nameVon(D.studis[a.student]).localeCompare(nameVon(D.studis[b.student])))
+      .map((p) => `<tr class="klickbar" onclick="praktikumDialog('${p.id}')"><td>${p.art}</td><td>${esc(p.semester)}</td><td>${esc(nameVon(D.studis[p.student]))}${(p.vertretung || []).includes(k) && !(p.doz || []).includes(k) ? ` <span class="leise">(Vertretung für ${esc((p.doz || []).join("+"))})</span>` : (p.doz || []).length > 1 ? ` <span class="leise">(zu zweit${anteil(p, k) < 1 ? ", ½" : ""})</span>` : ""}</td><td><span class="punkt st-${statusInfo(p)[2]}"></span>${p.status === "abgeschlossen" ? "✓" : ""}</td></tr>`).join("");
+    const neben = ["aeB"].map((x) => [x, l.filter((p) => kategorie(p) === x).reduce((n, p) => n + anteil(p, k), 0)]).filter((x) => x[1]);
+    return `<div class="karte"><h3>${esc(t.name)} <span class="leise klein" style="font-family:inherit">${esc(k)}</span></h3>
+      <table class="lekttab abrechnung"><tr><th></th><th>geplant</th><th>effektiv</th><th>Differenz</th></tr>
+      ${zeile("Standortpraktika", ["SP"])}${zeile("Berufspraktika", ["BP"])}${zeile("<b>SP + BP</b>", ["SP", "BP"])}${zeile("<b>Prüfungspraktika</b>", ["PP"])}
+      ${(() => { const z = zahlen(k, sj), r = (titel, g, e) => `<tr><td>${titel}</td><td>${g ? zahl(g) : "–"}</td><td><b>${zahl(e)}</b></td><td class="${g && e - g ? (e > g ? "ok" : "nein") : ""}">${g ? (e - g > 0 ? "+" : "") + zahl(e - g).replace("·", "0") : ""}</td></tr>`;
+        return r("Projektarbeiten", z.plan("PA"), z.PA) + r(`Wahlpflichtarbeiten <span class="mini">(10 ECTS = 2)</span>`, z.plan("IVA"), z.WP) + r("Diplomprüfungen Herbst", z.plan("DP", "HS"), z.DPH) + r("Diplomprüfungen Sommer", z.plan("DP", "FS"), z.DPS) + (z.DPN ? r("Nachprüfungen", 0, z.DPN) : ""); })()}</table>
+      ${neben.length ? `<p class="mini">ausserdem: ${neben.map(([x, n]) => `${zahl(n)} ${x}`).join(" · ")}</p>` : ""}
+      <details><summary class="klein">Welche?</summary><table class="lekttab klein" style="width:100%">
+        <tr><th colspan="4">Standort- und Berufspraktika</th></tr>${liste("SPBP") || `<tr><td class="leise" colspan="4">keine</td></tr>`}
+        <tr><th colspan="4">Prüfungspraktika</th></tr>${liste("PP") || `<tr><td class="leise" colspan="4">keine</td></tr>`}
+        ${["aeB", "PA", "IVA"].map((x) => liste(x) ? `<tr><th colspan="4">${KATEGORIEN.find((y) => y[0] === x)[2]}</th></tr>${liste(x)}` : "").join("")}</table></details></div>`;
+  };
+  const ziele = (D.einst.ziele || []).filter((z) => (z.semester || []).some((x) => sems.includes(x))).map((z) => { const q = Object.values(D.praktika).filter((p) => (z.semester || []).includes(p.semester)); return `<div class="hinweis klein">${esc(z.text)}: SP + BP <b>${q.filter((p) => kategorie(p) === "SPBP").length}</b> von ${z.SPBP} · PP <b>${q.filter((p) => p.art === "PP").length}</b> von ${z.PP}</div>`; }).join("");
+  return `<h2>Buchhaltung</h2>
+  <div class="leiste"><span class="gr">Studienjahr <select onchange="filter('buchSj', this.value)">${jahre.map((x) => `<option ${x === sj ? "selected" : ""}>${x}</option>`).join("")}</select>${sj === sjVon(heute) ? ` <span class="leise klein">(aktuell)</span>` : ""}</span>
+  <span class="gr">Zu zweit begleitet zählt ${[["voll", "für beide je 1"], ["halb", "je ½"]].map(([k, t]) => `<span class="chip ${(D.einst.beide || "voll") === k ? "an" : ""}" onclick="beideSetzen('${k}')">${t}</span>`).join("")}</span>
+  <button onclick="buchCsv('${sj}')">⬇ Abrechnung (Excel)</button></div>
+  <p class="leise klein">Abrechnungszeitraum 1. September bis 31. August = Studienjahr ${sj} (${sems.join(" + ")}). Gezählt werden Praktika nach Doz – «geplant» aus dem Pensum in der Zuteilung, «effektiv» aus den Praktika.</p>
+  ${ziele}
+  ${ohneDoz.length ? `<div class="warnung klein">Ohne Doz (zählt bei niemandem): ${ohneDoz.map((p) => `<span class="link" onclick="praktikumDialog('${p.id}')">${p.art} ${esc(D.studis[p.student].name)} ${esc(p.semester)}</span>`).join(" · ")}</div>` : ""}
+  <div class="karten">${team.map(karte).join("")}</div>
+  <details><summary><h3 style="display:inline">Alle Studienjahre im Vergleich</h3></summary>
+  <table class="buch"><thead><tr><th class="sem">Jahr</th>${team.map((t) => `<th class="gtrenn" colspan="2">${esc(t.kuerzel)}</th>`).join("")}</tr>
+  <tr><th class="sem"></th>${team.map(() => `<th class="gtrenn">SP + BP</th><th>PP</th>`).join("")}</tr></thead>
+  <tbody>${jahre.map((j) => { const q = Object.values(D.praktika).filter((p) => semsVonSj(j).includes(p.semester)); return `<tr class="klickbar ${j === sj ? "gewaehlt" : ""}" onclick="filter('buchSj','${j}')"><td class="sem"><b>${j}</b></td>${team.map((t) => `<td class="gtrenn">${zahl(zaehl(q, t.kuerzel, "SPBP"))}</td><td>${zahl(zaehl(q, t.kuerzel, "PP"))}</td>`).join("")}</tr>`; }).join("")}</tbody></table></details>`;
+}
+async function beideSetzen(k) { await eintragen({ typ: "einst", felder: { beide: k } }); }
+function buchCsv(sj) {
+  const sems = semsVonSj(sj), [y1] = sj.split("/"), naechstes = `${String(Number(y1) + 1).padStart(2, "0")}/${String(Number(y1) + 2).padStart(2, "0")}`;
+  const pr = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student]);
+  const eff = (k, art) => pr.filter((p) => p.art === art && !p.aeb).reduce((n, p) => n + anteil(p, k), 0);
+  const plan = (k, art, ss) => ss.reduce((n, sm) => n + (Number(pensumVon(sm, k)[art]) || 0), 0);
+  const z0 = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
+  const team = D.einst.team || [], z = [];
+  z.push([`SEK II Abrechnung Standort- und Berufspraktikabesuche SJ ${sj} und Planung SJ ${naechstes} – Mathematik`], [`Abrechnungszeitraum: 1. September 20${y1} bis 31. August 20${Number(y1) + 1}`], []);
+  z.push(["Fach", "Dozierende", "email", "geplant SP", "geplant BP", "effektiv SP", "effektiv BP", "Differenz (Anzahl)", `Planung ${naechstes} SP`, `Planung ${naechstes} BP`]);
+  for (const t of team) { const gs = plan(t.kuerzel, "SP", sems), gb = plan(t.kuerzel, "BP", sems), es = eff(t.kuerzel, "SP"), eb = eff(t.kuerzel, "BP"); z.push(["MA", t.name, t.mail || "", z0(gs), z0(gb), z0(es), z0(eb), z0(es + eb - gs - gb), z0(plan(t.kuerzel, "SP", semsVonSj(naechstes))), z0(plan(t.kuerzel, "BP", semsVonSj(naechstes)))]); }
+  z.push([], [`S2: Abrechnungsübersicht Diplomlektionen Mathematik – Abrechnung ${sj}, Planung ${naechstes}`], []);
+  z.push(["Fach", "Dozierende", "geplant (Anzahl Studierende)", "effektiv (Anzahl Studierende)", "Differenz", `Planung ${naechstes}`]);
+  for (const t of team) { const g = plan(t.kuerzel, "PP", sems), e = eff(t.kuerzel, "PP"); z.push(["MA", t.name, z0(g), z0(e), z0(e - g), z0(plan(t.kuerzel, "PP", semsVonSj(naechstes)))]); }
+  const zuZweit = pr.filter((p) => (p.doz || []).length > 1 && ["SP", "BP", "PP"].includes(p.art));
+  if (zuZweit.length) z.push([], [`Zu zweit begleitet (${D.einst.beide === "halb" ? "je ½ gezählt" : "für beide je 1 gezählt"}): ` + zuZweit.map((p) => `${p.art} ${D.studis[p.student].name}`).join(", ")]);
+  z.push([], ["Einzeln"], ["Doz", "Art", "Semester", "Name", "Vorname", "Stand", "zu zweit"]);
+  for (const t of team) for (const p of pr.filter((p) => (p.doz || []).includes(t.kuerzel)).sort((a, b) => kategorie(a).localeCompare(kategorie(b)) || semKey(a.semester) - semKey(b.semester))) {
+    const s = D.studis[p.student]; z.push([t.kuerzel, p.aeb ? "aeB" : p.art, p.semester, s.name, s.vorname, statusInfo(p)[1], p.doz.length > 1 ? "ja" : ""]);
+  }
+  const csv = "﻿" + z.map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `Abrechnung Praktika Mathematik SJ ${sj.replace("/", "-")}.csv`; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ====================== Meldungen: Abrechnungsformulare (Studienjahr) und Snapshot (Semester) ====================== */
+/* Zählen je Doz und Studienjahr – dieselben Regeln wie in der Buchhaltung */
+function zahlen(k, sj) {
+  const sems = semsVonSj(sj), l = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student] && beteiligt(p, k));
+  const n = (f) => l.filter(f).reduce((x, p) => x + anteil(p, k), 0);
+  const plan = (art, nurSem) => sems.filter((sm) => !nurSem || sm.startsWith(nurSem)).reduce((x, sm) => x + (Number(pensumVon(sm, k)[art]) || 0), 0);
+  return {
+    l, plan, k,
+    SP: n((p) => p.art === "SP" && !p.aeb), BP: n((p) => p.art === "BP"), PP: n((p) => p.art === "PP"), aeB: n((p) => p.aeb), PA: n((p) => p.art === "PA"),
+    WP: l.filter((p) => p.art === "IVA").reduce((x, p) => x + anteil(p, k) * (Number(p.ects) === 5 ? 1 : 2), 0),   // 10 ECTS zählt doppelt
+    WP10: l.filter((p) => p.art === "IVA" && Number(p.ects) !== 5),
+    DPH: n((p) => p.art === "DP" && !p.nachpruefung && /^HS/.test(p.semester)), DPS: n((p) => p.art === "DP" && !p.nachpruefung && /^FS/.test(p.semester)), DPN: n((p) => p.art === "DP" && p.nachpruefung),
+  };
+}
+function naechstesSj(sj) { const a = Number(sj.slice(0, 2)) + 1; return `${String(a).padStart(2, "0")}/${String(a + 1).padStart(2, "0")}`; }
+
+/* Die vier Formulare. Vorlage = das Formular, das jedes Jahr kommt (in «Werkzeuge/Vorlagen Abrechnung» ablegen).
+   Gefüllt werden nur die Zahlenzellen je Doz-Zeile; Formatierung und Formeln bleiben, Excel rechnet beim Öffnen neu. */
+const FORMULARE = [
+  { k: "spbp", titel: "Standort- und Berufspraktika", muster: /Standort_Berufspraktika/i,
+    datei: (sj, nx) => `AB_S2_MA_Abrechnung-SJ-${sj.replace("/", "_")}_Planung_SJ-${nx.replace("/", "_")}_${heuteKurz()}_Standort_Berufspraktika.xlsx`,
+    soll: ["E", "F"], ist: ["H", "I"], plan: ["O", "P"], bem: "M",
+    werte: (z, nz) => ({ soll: [z.plan("SP"), z.plan("BP")], ist: [z.SP, z.BP], plan: [nz.plan("SP"), nz.plan("BP")], bem: vertretungText(z, ["SP", "BP"]) }) },
+  { k: "pawp", titel: "Projekt- und Wahlpflichtarbeiten", muster: /PA_WP|FA&WP/i,
+    datei: (sj, nx) => `AB_S2_MA_Abrechnung-SJ-${sj.replace("/", "_")}_Planung_SJ-${nx.replace("/", "_")}_${heuteKurz()}_PA_WP.xlsx`,
+    soll: ["E", "F"], ist: ["H", "I"], plan: ["O", "P"], bem: "M",
+    werte: (z, nz) => ({ soll: [z.plan("PA"), z.plan("IVA")], ist: [z.PA, z.WP], plan: [nz.plan("PA"), nz.plan("IVA")],
+      bem: z.WP10.length ? `Wahlpflichtarbeiten ${z.WP10.map((p) => D.studis[p.student].name).join(", ")} ${z.WP10.length > 1 ? "werden" : "wird"} doppelt gezählt da 10 ECTS` : "" }) },
+  { k: "dl", titel: "Diplomlektionen (Prüfungspraktika)", muster: /Dipllekt|Diplomlektion/i,
+    datei: (sj) => `S2_Abrechnung-MA-Dipllekt_${sj.replace("/", "")}.xlsx`,
+    soll: ["C"], ist: ["F"], plan: ["J"], bem: "M",
+    texte: (a, b, c) => ({ A2: `Abrechnung 20${a}/20${b}, Planung 20${b}/20${c}`, C10: `Leistungsvereinbarung \n20${a}/20${b}`, F10: `effektiv 20${a}/20${b}`, J10: `Planung 20${b}/20${c}`, E11: `Geplant in LV 20${a}/20${b}`, I11: `Definitiver Eintrag in LV 20${a}/20${b}`, L11: `Geplant in LV 20${b}/20${c}` }),
+    werte: (z, nz) => ({ soll: [z.plan("PP")], ist: [z.PP], plan: [nz.plan("PP")], bem: vertretungText(z, ["PP"]) }) },
+  { k: "dpr", titel: "Diplomprüfungen", muster: /Diplompr|Pruef/i,
+    datei: (sj) => `S2_MA_Diplomprüfungen_20${sj.slice(0, 2)}-20${sj.slice(3)}.xlsx`,
+    soll: ["C", "D"], ist: ["G", "H", "I"], plan: ["M", "N"], bem: "P",
+    texte: (a, b, c) => ({ A2: `Studienjahr 20${a}/20${b}  Planung 20${b}/20${c}` }),
+    werte: (z, nz) => ({ soll: [z.plan("DP", "HS"), z.plan("DP", "FS")], ist: [z.DPH, z.DPS, z.DPN], plan: [nz.plan("DP", "HS"), nz.plan("DP", "FS")] }) },
+];
+/* «Vertretung für <Name>: BP <Nachname>, PP <Nachname>» – für die Bemerkungsspalte */
+function vertretungText(z, arten) {
+  const l = z.l.filter((p) => arten.includes(p.art) && (p.vertretung || []).includes(z.k) && !(p.doz || []).includes(z.k)); if (!l.length) return "";
+  const fuer = [...new Set(l.flatMap((p) => p.doz || []))].map((k) => ((D.einst.team || []).find((t) => t.kuerzel === k) || { name: k }).name).join(", ");
+  return `Vertretung${fuer ? " für " + fuer : ""}: ${l.map((p) => p.art + " " + D.studis[p.student].name).join(", ")} (doppelt abgerechnet)`;
+}
+function heuteKurz() { const d = new Date(); return String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0"); }
+function sjAusDatei(n) {
+  let m = /SJ-(\d\d)_(\d\d)/.exec(n); if (m) return m[1] + "/" + m[2];
+  m = /20(\d\d)-20(\d\d)/.exec(n); if (m) return m[1] + "/" + m[2];
+  m = /_(\d\d)(\d\d)\.xlsx$/i.exec(n); if (m) return m[1] + "/" + m[2];
+  return "";
+}
+const VORLAGEN = "Werkzeuge/Vorlagen Abrechnung";
+async function vorlagenLesen() {
+  const liste = [];
+  try {
+    let d = S.wurzel || S.ordner; for (const t of VORLAGEN.split("/")) d = await d.getDirectoryHandle(t);
+    for await (const [n, h] of d.entries()) if (h.kind === "file" && /\.xlsx$/i.test(n) && !n.startsWith("~$")) liste.push({ name: n, h, sj: sjAusDatei(n) });
+  } catch (e) {}
+  S.vorlagen = {};
+  for (const f of FORMULARE) S.vorlagen[f.k] = liste.filter((x) => f.muster.test(x.name)).sort((a, b) => b.sj.localeCompare(a.sj))[0] || null;
+  zeichnen();
+}
+/* --- kleine xlsx-Werkzeuge (Zellen in der Blatt-XML ersetzen) --- */
+const xmlEsc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const spalteNr = (c) => [...c].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
+function zelleLesen(xml, ref, ss) {
+  const m = new RegExp(`<c r="${ref}"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)`).exec(xml); if (!m) return null;
+  const attr = m[1], inn = m[2] || "", v = (/<v>([^<]*)<\/v>/.exec(inn) || [])[1];
+  if (/t="s"/.test(attr)) return ss[Number(v)] ?? "";
+  if (/t="inlineStr"/.test(attr)) return [...inn.matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((x) => x[1]).join("");
+  return v === undefined ? null : Number(v);
+}
+function zelleSetzen(xml, ref, wert) {
+  const re = new RegExp(`<c r="${ref}"([^>]*?)(?:/>|>[\\s\\S]*?</c>)`), m = re.exec(xml);
+  const st = m ? (/ s="(\d+)"/.exec(m[1]) || [])[0] || "" : "";
+  const neu = wert === null || wert === "" ? `<c r="${ref}"${st}/>` : typeof wert === "number" ? `<c r="${ref}"${st}><v>${Math.round(wert * 100) / 100}</v></c>`
+    : `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(wert)}</t></is></c>`;
+  if (m) return xml.replace(re, neu);
+  const zeile = Number(ref.replace(/[A-Z]+/, "")), sp = spalteNr(ref.replace(/\d+/, ""));
+  const rm = new RegExp(`<row r="${zeile}"([^>]*?)(/>|>([\\s\\S]*?)</row>)`).exec(xml); if (!rm) return xml;
+  if (rm[2] === "/>") return xml.replace(rm[0], `<row r="${zeile}"${rm[1]}>${neu}</row>`);
+  let inhalt = rm[3], pos = inhalt.length;
+  for (const c of inhalt.matchAll(/<c r="([A-Z]+)\d+"/g)) if (spalteNr(c[1]) > sp) { pos = c.index; break; }
+  return xml.replace(rm[0], `<row r="${zeile}"${rm[1]}>${inhalt.slice(0, pos)}${neu}${inhalt.slice(pos)}</row>`);
+}
+async function formularFuellen(f, sj) {
+  const vl = S.vorlagen && S.vorlagen[f.k]; if (!vl) throw new Error("Vorlage fehlt");
+  await skriptLaden(BIB.zip);
+  const zip = await JSZip.loadAsync(await (await vl.h.getFile()).arrayBuffer());
+  // erstes Blatt finden
+  const wb = await zip.file("xl/workbook.xml").async("string"), rels = await zip.file("xl/_rels/workbook.xml.rels").async("string");
+  const rid = /<sheet [^>]*r:id="([^"]+)"/.exec(wb)[1], ziel = new RegExp(`Id="${rid}"[^>]*Target="([^"]+)"|Target="([^"]+)"[^>]*Id="${rid}"`).exec(rels);
+  const pfad = "xl/" + (ziel[1] || ziel[2]).replace(/^\/?xl\//, "");
+  let xml = await zip.file(pfad).async("string");
+  const ssDatei = zip.file("xl/sharedStrings.xml"), ss = ssDatei ? [...(await ssDatei.async("string")).matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => [...m[1].matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((x) => x[1]).join("").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")) : [];
+  const nx = naechstesSj(sj), alt = vl.sj, a = sj.slice(0, 2), b = sj.slice(3), c = nx.slice(3);
+  // Jahreszahlen in den Überschriften verschieben (nur Werte nahe am Vorlagenjahr)
+  const delta = alt ? Number(a) - Number(alt.slice(0, 2)) : 0, oa = alt ? Number(alt.slice(0, 2)) : 0;
+  const verschieben = (t) => !delta ? t : t.replace(/(?<![\d.])(20)?(\d\d)(?![\d.])/g, (m0, h, yy) => { const y = Number(yy); return y >= oa - 1 && y <= oa + 2 ? (h || "") + String(y + delta).padStart(2, "0") : m0; });
+  const zeilen = {};
+  for (const m of xml.matchAll(/<c r="([A-Z]+)(\d+)"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+    const ref = m[1] + m[2], t = zelleLesen(xml, ref, ss);
+    if (typeof t === "string" && t) {
+      if (m[1] === "B") zeilen[m[2]] = t;
+      const neu = verschieben(t); if (neu !== t) xml = zelleSetzen(xml, ref, neu);
+    }
+  }
+  if (f.texte) for (const [ref, t] of Object.entries(f.texte(a, b, c))) xml = zelleSetzen(xml, ref, t);
+  const bericht = [];
+  for (const t of D.einst.team || []) {
+    const nach = t.name.split(" ").pop().toLowerCase(), r = Object.keys(zeilen).find((r) => zeilen[r].toLowerCase().includes(nach));
+    if (!r) { bericht.push(`${t.name}: keine Zeile in der Vorlage`); continue; }
+    const w = f.werte(zahlen(t.kuerzel, sj), zahlen(t.kuerzel, nx));
+    // geplant: aus dem Pensum; ohne Pensum aus der Vorlage (Planung des Vorjahres bzw. Leistungsvereinbarung desselben Jahres)
+    let quelle = "Pensum";
+    if (!w.soll.some((x) => x)) {
+      const aus = alt === sj ? f.soll : naechstesSj(alt || "00/01") === sj ? f.plan : null;
+      if (aus) { w.soll = aus.map((col) => Number(zelleLesen(xml, col + r, ss)) || 0); quelle = alt === sj ? "Vorlage" : "Planung im Vorjahresformular"; } else quelle = "–";
+    }
+    f.soll.forEach((col, i) => (xml = zelleSetzen(xml, col + r, w.soll[i] || 0)));
+    f.ist.forEach((col, i) => (xml = zelleSetzen(xml, col + r, w.ist[i] || 0)));
+    f.plan.forEach((col, i) => (xml = zelleSetzen(xml, col + r, w.plan[i] || null)));
+    xml = zelleSetzen(xml, f.bem + r, w.bem || null);
+    bericht.push(`${t.name}: geplant ${w.soll.map(zahl).join("/")} (${quelle}) · effektiv ${w.ist.map(zahl).join("/")} · Planung ${nx} ${w.plan.map(zahl).join("/")}`);
+  }
+  // alte Ergebnisse der Formeln weg, Excel rechnet beim Öffnen neu
+  xml = xml.replace(/(<\/f>)<v>[^<]*<\/v>/g, "$1").replace(/(<f[^>]*\/>)<v>[^<]*<\/v>/g, "$1");
+  zip.file(pfad, xml);
+  zip.file("xl/workbook.xml", /<calcPr/.test(wb) ? wb.replace(/<calcPr([^>]*?)\/>/, (m0, at) => (/fullCalcOnLoad/.test(at) ? m0 : `<calcPr${at} fullCalcOnLoad="1"/>`)) : wb.replace("</workbook>", '<calcPr fullCalcOnLoad="1"/></workbook>'));
+  if (zip.file("xl/calcChain.xml")) zip.remove("xl/calcChain.xml");
+  const blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return { blob, name: f.datei(sj, nx), bericht };
+}
+async function formularLaden(k, sj) {
+  const f = FORMULARE.find((x) => x.k === k);
+  try {
+    const r = await formularFuellen(f, sj);
+    const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
+    S.formBericht = Object.assign(S.formBericht || {}, { [k]: r.bericht }); zeichnen();
+  } catch (e) { meldung(`${f.titel}: ${e.message}`); }
+}
+async function alleFormulare(sj) { for (const f of FORMULARE) if (S.vorlagen && S.vorlagen[f.k]) { await formularLaden(f.k, sj); await new Promise((ok) => setTimeout(ok, 400)); } }
+function formulareHtml(sj) {
+  if (!S.vorlagen) { vorlagenLesen(); return ""; }
+  const nx = naechstesSj(sj);
+  return `<h3>Abrechnungsformulare ${sj} (Planung ${nx})</h3>
+  <table class="lekttab"><tr><th>Formular</th><th>Vorlage</th><th></th></tr>${FORMULARE.map((f) => { const v = S.vorlagen[f.k];
+    return `<tr><td><b>${esc(f.titel)}</b>${(S.formBericht || {})[f.k] ? `<div class="mini">${S.formBericht[f.k].map(esc).join("<br>")}</div>` : ""}</td><td class="klein">${v ? `${esc(v.name)}${v.sj && v.sj !== sj && naechstesSj(v.sj) !== sj ? ` <span class="nein">(SJ ${esc(v.sj)})</span>` : ""}` : `<span class="nein">fehlt</span>`}</td>
+    <td>${v ? `<button class="klein" onclick="formularLaden('${f.k}','${sj}')">⬇ ausgefüllt</button>` : ""}</td></tr>`; }).join("")}</table>
+  <p><button class="haupt" onclick="alleFormulare('${sj}')">⬇ alle ausgefüllt herunterladen</button> <button class="klein" onclick="S.vorlagen = null; zeichnen()">Vorlagen neu suchen</button></p>
+  <p class="leise klein">Vorlagen: jedes Jahr die Formulare, die du bekommst, in «${VORLAGEN}» legen (die App nimmt pro Formular das neueste).
+  «geplant» kommt aus dem Pensum (Zuteilung); fehlt es, aus der Planung im Vorjahresformular. Excel rechnet die Stunden beim Öffnen neu – bitte kurz durchsehen, bevor du es zurückschickst.</p>`;
+}
+
+/* ---------- Module je Semester und Snapshot für das Sekretariat ---------- */
+const MODULE_STD = {
+  HS: [["MA01.01", "Fundamentum 1"], ["MA01.03", "Vertiefung 1"], ["MA01.05", "Projektarbeit"], ["MA10.01", "Spezialisierung 1 (5 ECTS)"], ["MA10.03", "Spezialisierung (10 ECTS)"]],
+  FS: [["MA01.02", "Fundamentum 2"], ["MA01.04", "Vertiefung 2"], ["MA01.05", "Projektarbeit"], ["MA10.02", "Spezialisierung 2 (5 ECTS)"], ["MA10.03", "Spezialisierung (10 ECTS)"]],
+};
+const PK = { Monofach: "PK51", Erstfach: "PK52", Zweitfach: "PK53", Zusatzfach: "PK54" };
+const semCode = (sem) => (sem || "").replace(/^HS/, "H").replace(/^FS/, "F");
+const anlass = (code, sem) => `PLU.${code}-S2.${semCode(sem)}.001`;
+const vorSem = (sem) => semAus(semKey(sem) - 1);
+/* Module aus Bausteinen: PA im Semester → MA01.05, IVA → MA10.03 (10 ECTS) bzw. MA10.01/02 (5 ECTS) */
+function autoModule(s, sem) {
+  const m = {};
+  for (const p of praktikaVon(s.id).filter((p) => p.semester === sem)) {
+    if (p.art === "PA") m["MA01.05"] = p;
+    if (p.art === "IVA") m[Number(p.ects) === 5 ? (sem.startsWith("HS") ? "MA10.01" : "MA10.02") : "MA10.03"] = p;
+  }
+  return m;
+}
+function moduleVon(s, sem) { return new Set([...((s.module || {})[sem] || []), ...Object.keys(autoModule(s, sem))]); }
+async function modulSetzen(sid, sem, code, an) {
+  const s = D.studis[sid], l = new Set((s.module || {})[sem] || []); an ? l.add(code) : l.delete(code);
+  await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { ["module." + sem]: [...l] } });
+}
+function vSnapshot() {
+  const sem = S.f.snapSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 2 && semKey(x) <= semKey(semHeute()) + 1);
+  const mods = (D.einst.module || MODULE_STD)[sem.slice(0, 2)] || [];
+  const studis = Object.values(D.studis).filter((s) => !istArchiv(s) || moduleVon(s, sem).size).sort((a, b) => semKey(a.start) - semKey(b.start) || a.name.localeCompare(b.name));
+  return `<div class="leiste"><span class="gr">Semester ${sems.map((x) => `<span class="chip ${x === sem ? "an" : ""}" onclick="filter('snapSem','${x}')">${x}</span>`).join("")}</span>
+  <button class="haupt" onclick="snapshotDrucken('${sem}')">📄 Snapshot ${semCode(sem)} als PDF</button>
+  <span class="leise klein">Druckfenster öffnet sich – dort «Als PDF sichern».</span></div>
+  <h3>Module ${sem} <span class="leise klein" style="font-family:inherit">– wer ist eingeschrieben? (✓ grau = aus Projekt-/Wahlpflichtarbeit)</span></h3>
+  <table class="lekttab studliste"><tr><th>Name</th><th>Beginn</th><th>Profil</th>${mods.map(([c, t]) => `<th title="${esc(t)}">${c}<div class="mini">${esc(t)}</div></th>`).join("")}</tr>
+  ${studis.map((s) => { const auto = autoModule(s, sem), man = new Set((s.module || {})[sem] || []);
+    return `<tr><td><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span></td><td class="leise">${esc(s.start || "")}</td><td class="klein">${esc(s.profil || "")}${wahlVon(s) ? ` <span class="leise">· ${esc((WAHL.find((w) => w[0] === wahlVon(s)) || [, ""])[1].split(" ")[0])}</span>` : ""}</td>
+    ${mods.map(([c]) => `<td style="text-align:center">${auto[c] ? `<span class="leise" title="aus ${auto[c].art}">✓</span>` : `<input type="checkbox" ${man.has(c) ? "checked" : ""} onchange="modulSetzen('${s.id}','${sem}','${c}',this.checked)">`}</td>`).join("")}</tr>`; }).join("")}</table>`;
+}
+function snapshotHtml(sem) {
+  const vs = vorSem(sem), mods = (D.einst.module || MODULE_STD)[sem.slice(0, 2)] || [];
+  const aktiv = Object.values(D.studis).filter((s) => !["exmatrikuliert"].includes(s.stand));
+  const namen = (l) => (l.length ? `<ul>${l.map((s) => `<li>${esc((s.vorname ? s.vorname + " " : "") + s.name)}</li>`).join("")}</ul>` : "");
+  const sort = (l) => l.sort((a, b) => a.name.localeCompare(b.name));
+  // Module
+  const modSpalten = mods.filter(([c]) => aktiv.some((s) => moduleVon(s, sem).has(c)));
+  // Altlasten: PA/IVA aus dem Vorsemester, nicht abgeschlossen
+  const alt = {};
+  for (const p of Object.values(D.praktika)) if (p.semester === vs && ["PA", "IVA"].includes(p.art) && p.status !== "abgeschlossen" && D.studis[p.student]) {
+    const c = p.art === "PA" ? "MA01.05" : Number(p.ects) === 5 ? (vs.startsWith("HS") ? "MA10.01" : "MA10.02") : "MA10.03"; (alt[c] ||= []).push(D.studis[p.student]);
+  }
+  const praktTab = (art, nr, titel) => {
+    const profile = art === "SP" ? ["Monofach", "Erstfach"] : ["Monofach", "Erstfach", "Zweitfach", "Zusatzfach"];
+    const im = (pf, ss) => sort(Object.values(D.praktika).filter((p) => p.art === art && p.semester === ss && D.studis[p.student] && D.studis[p.student].profil === pf && !p.aeb && (ss === sem || p.status !== "abgeschlossen")).map((p) => D.studis[p.student]));
+    const ohne = sort(Object.values(D.praktika).filter((p) => p.art === art && p.semester === sem && D.studis[p.student] && !PK[D.studis[p.student].profil]).map((p) => D.studis[p.student]));
+    return `<table><tr><th class="art">${titel}</th>${profile.map((pf) => `<th>${pf}<br><span class="code">${anlass(PK[pf] + "." + nr, sem)}</span></th>`).join("")}</tr>
+      <tr><td></td>${profile.map((pf) => `<td>${namen(im(pf, sem))}</td>`).join("")}</tr>
+      <tr><td class="art">Altlasten</td>${profile.map((pf) => `<td>${namen(im(pf, vs))}</td>`).join("")}</tr></table>${ohne.length ? `<p class="hinweis-d">${titel} ohne Profil bzw. aeB: ${ohne.map((s) => esc(s.vorname + " " + s.name)).join(", ")}</p>` : ""}`;
+  };
+  return `<h1>Snapshot ${semCode(sem)}</h1><p class="stand">Mathematik Sek II · Stand ${new Date().toLocaleDateString("de-CH")}</p>
+  <h2>Module</h2>
+  ${modSpalten.length ? `<table><tr>${modSpalten.map(([c, t]) => `<th><span class="code">${anlass(c, sem)}</span><br>${esc(t)}</th>`).join("")}</tr>
+    <tr>${modSpalten.map(([c]) => `<td>${namen(sort(aktiv.filter((s) => moduleVon(s, sem).has(c))))}</td>`).join("")}</tr></table>` : `<p>Keine Moduleinschreibungen erfasst.</p>`}
+  ${Object.keys(alt).length ? `<h3>Altlasten</h3><p>Angemeldet im letzten Semester, aber nicht abgeschlossen (bitte auf neuen Anlass ummelden)</p>
+    <table><tr>${Object.keys(alt).map((c) => `<th><span class="code">${anlass(c, vs)}</span></th>`).join("")}</tr><tr>${Object.values(alt).map((l) => `<td>${namen(sort(l))}</td>`).join("")}</tr></table>` : ""}
+  <h2>Praktika</h2>${praktTab("SP", "01", "SP")}${praktTab("BP", "02", "BP")}${praktTab("PP", "DP", "PP")}`;
+}
+function snapshotDrucken(sem) {
+  let d = $("#druck"); if (!d) { d = document.createElement("div"); d.id = "druck"; document.body.appendChild(d); }
+  d.innerHTML = snapshotHtml(sem);
+  document.title = `Snapshot-${semCode(sem)}`;
+  window.print();
+  setTimeout(() => { document.title = "Buchhaltung Sek II Mathematik"; }, 1000);
+}
+
+/* ---------- Pensenplanung (nur Admin). Gespeichert in einem eigenen Ordner, den nur der Browser des Admins kennt
+   (z.B. iCloud › Sek II - Leitung › Planung) – nie im geteilten SwitchDrive-Ordner. Rechnung wie pensenplanung.xlsx. ---------- */
+const PRIVAT_DATEI = "pensenplanung-app.json", PROZENT_JE_STUNDE = 0.05796296;
+const PENSEN_STD = { V: 3, N: 5, diplom: 9, pkVors: 7, pa: 10, paVors: 5, quote: 0.8, quoteDP: 0.9,
+  anteil: { fundHS: { wec: 1 }, addHS: { wec: 1 }, fundFS: { wec: 0.5, alh: 0.5 }, addFS: { wec: 0.5, alh: 0.5 }, prakt: { wec: 1 }, diplom: { wec: 1 }, pk: { wec: 1 }, fk: { alh: 1 }, pv: { wec: 1 }, dp: { wec: 1 }, pawp: { wec: 1 } } };
+async function privatZugriff() {
+  if (S.beispiel) { if (!S.privat) S.privat = new MemOrdner("Planung"); return true; }
+  if (S.privat) return true;
+  const h = await IDB.get("privat").catch(() => null); if (!h) return false;
+  if ((await h.queryPermission({ mode: "readwrite" })) === "granted") { S.privat = h; return true; }
+  S.privatWartet = h; return false;
+}
+async function privatWaehlen() {
+  try { const h = await showDirectoryPicker({ id: "privat-planung", mode: "readwrite" }); await IDB.set("privat", h); S.privat = h; S.pensen = null; zeichnen(); } catch (e) { if (e.name !== "AbortError") meldung(e.message); }
+}
+async function privatErlauben() { const h = S.privatWartet; if (h && (await h.requestPermission({ mode: "readwrite" })) === "granted") { S.privat = h; S.privatWartet = null; S.pensen = null; zeichnen(); } }
+async function pensenLaden() {
+  if (!(await privatZugriff())) { S.pensen = false; return zeichnen(); }
+  try { S.pensen = JSON.parse(await (await (await S.privat.getFileHandle(PRIVAT_DATEI)).getFile()).text()); } catch (e) { S.pensen = { jahre: {} }; }
+  zeichnen();
+}
+async function pensenSetzen(sj, pfad, wert) {
+  const j = (S.pensen.jahre[sj] ||= JSON.parse(JSON.stringify(PENSEN_STD)));
+  const t = pfad.split("."); let o = j; while (t.length > 1) { const k = t.shift(); o = o[k] ||= {}; } o[t[0]] = wert === "" ? null : Number(wert);
+  j.geaendert = new Date().toISOString(); j.wer = S.ich;
+  const w = await (await S.privat.getFileHandle(PRIVAT_DATEI, { create: true })).createWritable(); await w.write(JSON.stringify(S.pensen, null, 1)); await w.close();
+  zeichnen();
+}
+function pensenRechnen(j) {
+  const V = Number(j.V) || 0, N = Number(j.N) || 0, q = Number(j.quote) || 0.8, qd = Number(j.quoteDP) || 0.9, i = Math.floor;
+  const hs = V + N < 10 ? "Piccolo" : "Kleingruppe", fs = N < 9 ? "Piccolo" : "Kleingruppe";
+  const z = [];
+  const zeile = (k, titel, prog, vors, std, addon, felder = {}) => z.push({ k, titel, prog, vors, std, addon, ...felder });
+  zeile("fundHS", "MA01 Fundamentum HS", hs, "", hs === "Piccolo" ? 107 : 153, hs === "Piccolo" ? 153 - 107 : 0);
+  zeile("addHS", "MA03 Additum HS", hs, "", hs === "Piccolo" ? 81 : 115, hs === "Piccolo" ? 115 - 81 : 0);
+  zeile("fundFS", "MA02 Fundamentum FS", fs, "", fs === "Piccolo" ? 107 : 153, fs === "Piccolo" ? 153 - 107 : 0);
+  zeile("addFS", "MA04 Additum FS", fs, "", fs === "Piccolo" ? 81 : 115, fs === "Piccolo" ? 115 - 81 : 0);
+  let pr = 2 * N + V, vo = i(pr * q); zeile("prakt", "Praktika (Normal) 6 h", pr, vo, 6 * vo, (pr - vo) * 6, { app: "SPBP" });
+  pr = Number(j.diplom) || 0; vo = i(pr * q); zeile("diplom", "Praktika (Diplom) 8 h", pr, vo, 8 * vo, (pr - vo) * 8, { progFeld: "diplom", app: "PP" });
+  pr = V + N; vo = Number(j.pkVors ?? N); zeile("pk", "Praxiskoordination", pr, vo, 25 * i((vo - 1) / 5) + 50, Math.max(0, (25 * i((pr - 1) / 5) + 50) - (25 * i((vo - 1) / 5) + 50)), { vorsFeld: "pkVors" });
+  zeile("fk", "Fachkoordination", "", "", 69, 0);
+  zeile("pv", "Prüfungsverantwortung", "", "", 15, 0);
+  pr = V + N; vo = i(pr * qd); zeile("dp", "Diplomprüfungen 2 h", pr, vo, 2 * vo, (pr - vo) * 2, { app: "DP" });
+  pr = Number(j.pa) || 0; vo = Number(j.paVors) || 0; zeile("pawp", "Projektarbeiten und Wahlpflicht 10 h", pr, vo, 10 * vo, (pr - vo) * 10, { progFeld: "pa", vorsFeld: "paVors", app: "PAIVA" });
+  return z;
+}
+function vPensen() {
+  if (S.pensen === undefined || S.pensen === null) { pensenLaden(); return `<p class="leise">wird geladen …</p>`; }
+  if (S.pensen === false) return `<div class="karte" style="max-width:640px"><h3>Pensenplanung – nur für dich</h3>
+    <p class="klein">Die Pensenplanung wird nicht im geteilten SwitchDrive-Ordner gespeichert, sondern in einem Ordner, den nur dein Browser kennt –
+    am besten <b>iCloud › Documents › Sek II › Sek II - Leitung › Planung</b>. Dort legt die App die Datei <code>${PRIVAT_DATEI}</code> an.</p>
+    ${S.privatWartet ? `<p><button class="haupt" onclick="privatErlauben()">Zugriff auf «${esc(S.privatWartet.name)}» erlauben</button></p>` : ""}
+    <p><button class="${S.privatWartet ? "" : "haupt"}" onclick="privatWaehlen()">Ordner für die Pensenplanung wählen …</button></p></div>`;
+  const heute = semHeute(), sj = S.f.buchSj || sjVon(heute), jahre = [...new Set([sjVon(heute), naechstesSj(sjVon(heute)), ...Object.keys(S.pensen.jahre)])].sort().reverse();
+  const j = Object.assign(JSON.parse(JSON.stringify(PENSEN_STD)), S.pensen.jahre[sj] || {}), z = pensenRechnen(j), team = D.einst.team || [];
+  const pz = (std) => (std * PROZENT_JE_STUNDE) / 100, proz = (x) => (x ? (x * 100).toFixed(2).replace(".", ",") + " %" : "·");
+  const feld = (pfad, wert, breite = 46, schritt = 1) => `<input type="number" step="${schritt}" min="0" value="${esc(wert ?? "")}" style="width:${breite}px" onchange="pensenSetzen('${sj}','${pfad}',this.value)">`;
+  const sems = semsVonSj(sj), q = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student]);
+  const app = { SPBP: q.filter((p) => ["SP", "BP"].includes(p.art)).length, PP: q.filter((p) => p.art === "PP").length, DP: q.filter((p) => p.art === "DP").length, PAIVA: q.filter((p) => ["PA", "IVA"].includes(p.art)).length };
+  const startKey = semKey("HS" + sj.slice(0, 2)), aktiv = Object.values(D.studis).filter((s) => !istArchiv(s));
+  const vorschlagV = aktiv.filter((s) => semKey(s.start) && semKey(s.start) < startKey).length, vorschlagN = aktiv.filter((s) => sems.includes(s.start)).length;
+  const summe = (f) => z.reduce((n, r) => n + f(r), 0);
+  return `<div class="leiste"><span class="gr">Studienjahr <select onchange="filter('buchSj', this.value)">${jahre.map((x) => `<option ${x === sj ? "selected" : ""}>${x}</option>`).join("")}</select></span>
+    <span class="gr">Studierende aus dem Vorjahr ${feld("V", j.V)} <span class="mini">App: ${vorschlagV}</span></span>
+    <span class="gr">Neuanmeldungen ${feld("N", j.N)} <span class="mini">App: ${vorschlagN}</span></span>
+    <span class="gr">vorsichtig ${feld("quote", j.quote, 54, 0.05)} · Diplomprüfungen ${feld("quoteDP", j.quoteDP, 54, 0.05)}</span>
+    <span class="leise klein">gespeichert in «${esc(S.privat.name)}» · nur für dich</span></div>
+  <div style="overflow:auto"><table class="buch pensen"><thead><tr><th class="sem"></th><th>Prognose</th><th>vorsichtig</th><th>Stunden</th><th>sichere %</th><th>mögliche Add-ons</th>${team.map((t) => `<th class="gtrenn" colspan="3">${esc(t.name || t.kuerzel)}</th>`).join("")}</tr>
+  <tr><th class="sem"></th><th></th><th></th><th></th><th></th><th></th>${team.map(() => `<th class="gtrenn">Anteil</th><th>sicher</th><th>Add-on</th>`).join("")}</tr></thead><tbody>
+  ${z.map((r) => `<tr><td class="sem">${esc(r.titel)}${r.app ? `<div class="mini">in der App: ${app[r.app]}</div>` : ""}</td>
+    <td>${r.progFeld ? feld(r.progFeld, j[r.progFeld]) : esc(r.prog)}</td><td>${r.vorsFeld ? feld(r.vorsFeld, j[r.vorsFeld] ?? r.vors) : esc(r.vors)}</td><td><b>${r.std}</b></td><td>${proz(pz(r.std))}</td><td class="leise">${r.addon ? proz(pz(r.addon)) : "·"}</td>
+    ${team.map((t) => { const a = Number(((j.anteil || {})[r.k] || {})[t.kuerzel]) || 0; return `<td class="gtrenn">${feld(`anteil.${r.k}.${t.kuerzel}`, a || "", 46, 0.25)}</td><td>${proz(a * pz(r.std))}</td><td class="leise">${r.addon ? proz(a * pz(r.addon)) : "·"}</td>`; }).join("")}</tr>`).join("")}
+  <tr class="ziel"><td class="sem">Gesamt</td><td></td><td></td><td>${summe((r) => r.std)}</td><td>${proz(summe((r) => pz(r.std)))}</td><td>${proz(summe((r) => pz(r.addon)))}</td>
+    ${team.map((t) => { const a = (r) => Number(((j.anteil || {})[r.k] || {})[t.kuerzel]) || 0; return `<td class="gtrenn"></td><td>${proz(summe((r) => a(r) * pz(r.std)))}</td><td>${proz(summe((r) => a(r) * pz(r.addon)))}</td>`; }).join("")}</tr></tbody></table></div>
+  <p class="leise klein">Wie in pensenplanung.xlsx: Prozent = Stunden × ${String(PROZENT_JE_STUNDE).replace(".", ",")} %; Fundamentum/Additum HS als Piccolo, solange Vorjahr + Neuanmeldungen unter 10, FS solange Neuanmeldungen unter 9;
+  Praktika normal = 2 × Neuanmeldungen + Vorjahr; Praxiskoordination 50 h + 25 h je weitere 5 Studierende. «in der App» = so viele sind in diesem Studienjahr schon eingetragen.
+  Abweichung zur Tabelle: Add-ons bei Diplompraktika mit 8 h statt 6 h.</p>`;
+}
+
+/* ---------- AVB-Eingang: Dateien aus Teams oder Outlook in «Eingang AVB» legen, die App ordnet sie zu ---------- */
+const EINGANG = "Eingang AVB";
+async function eingangLesen() {
+  let d; try { d = await (S.wurzel || S.ordner).getDirectoryHandle(EINGANG, { create: true }); } catch (e) { return meldung("Ordner «" + EINGANG + "» geht nicht: " + e.message); }
+  const erledigt = new Set(Object.values(D.praktika).map((p) => p.avbQuelle).filter(Boolean)), liste = [];
+  meldung("Eingang wird gelesen …");
+  for await (const [n, h] of d.entries()) {
+    if (h.kind !== "file" || !/\.(pdf|docx)$/i.test(n) || n.startsWith("~$") || n.startsWith(".")) continue;
+    const datei = await h.getFile(); let text = "", zeilen = [];
+    try { zeilen = (await avbZeilen(datei)) || []; text = zeilen.map((z) => z.text).join("\n"); } catch (e) {}
+    const imNamen = (re) => re.test(n.replace(/[_\-.]/g, " "));
+    const art = /Prüfungspraktikum\s*[☒■✓✗xX]/.test(text) || imNamen(/\b(PP|DP)\b|Prüfungsprakt|Diplomprakt/i) ? "PP" : /Berufspraktikum\s*[☒■✓✗xX]/.test(text) || imNamen(/\bBP\b|Berufsprakt/i) ? "BP" : /Standortpraktikum\s*[☒■✓✗xX]/.test(text) || imNamen(/\b(SP|StP)\b|Standort/i) ? "SP" : "";
+    // Person: Name aus der Datei (Zeile «Studierende…», sonst ganzer Text und Dateiname)
+    const kopf = (text.match(/Student[^\n]*?:\s*\|?\s*([^\n|]+)/i) || [])[1] || "", such = (t) => normName(t);
+    const kand = Object.values(D.studis).map((s) => { const nn = such(s.name), vn = such(s.vorname || ""); let p = 0;
+      if (nn && such(kopf).includes(nn)) p += 5; if (vn && such(kopf).includes(vn)) p += 2;
+      if (nn && such(n).includes(nn)) p += 4; if (vn && such(n).includes(vn)) p += 1;
+      if (!p && nn.length > 3 && such(text).includes(nn)) p += 1; return { s, p }; }).filter((x) => x.p).sort((a, b) => b.p - a.p);
+    const s = kand.length && (kand.length === 1 || kand[0].p > kand[1].p) ? kand[0].s : null;
+    const pr = s ? praktikaVon(s.id).filter((p) => (!art || p.art === art) && ART[p.art].praktikum).sort((a, b) => (a.avbDatei ? 1 : 0) - (b.avbDatei ? 1 : 0) || semKey(b.semester) - semKey(a.semester)) : [];
+    liste.push({ n, h, art, sid: s ? s.id : "", pid: pr[0] ? pr[0].id : "", lektionen: lektionenAus(zeilen, pr[0] && pr[0].semester), erledigt: erledigt.has(n) });
+  }
+  S.eingang = liste.sort((a, b) => a.erledigt - b.erledigt || a.n.localeCompare(b.n)); zeichnen();
+}
+const normName = (t) => String(t || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
+function eingangHtml() {
+  const team = (D.einst.zuteilung || []).includes(S.ich) || istAdmin();
+  if (!team) return "";
+  const l = S.eingang;
+  return `<details ${l && l.some((x) => !x.erledigt) ? "open" : ""}><summary><h3 style="display:inline">📥 AVB-Eingang</h3> <span class="leise klein">Dateien aus Teams oder Outlook in den Ordner «${EINGANG}» legen</span></summary>
+    <p><button onclick="eingangLesen()">Eingang lesen</button> ${l && l.some((x) => !x.erledigt && x.pid) ? `<button class="haupt" onclick="eingangAlle()">alle zugeordneten übernehmen</button>` : ""}</p>
+    ${l ? (l.length ? `<table class="lekttab"><tr><th>Datei</th><th>Person</th><th>Praktikum</th><th>Lektionen</th><th></th></tr>${l.map((x, i) => `<tr style="${x.erledigt ? "opacity:.45" : ""}"><td class="klein">${esc(x.n)}</td>
+      <td><select onchange="S.eingang[${i}].sid=this.value; S.eingang[${i}].pid=''; zeichnen()"><option value="">– wer? –</option>${Object.values(D.studis).filter((s) => !istArchiv(s) || s.id === x.sid).sort((a, b) => a.name.localeCompare(b.name)).map((s) => `<option value="${s.id}" ${s.id === x.sid ? "selected" : ""}>${esc(nameVon(s))}</option>`).join("")}</select></td>
+      <td><select onchange="S.eingang[${i}].pid=this.value"><option value="">–</option>${x.sid ? praktikaVon(x.sid).filter((p) => ART[p.art].praktikum).map((p) => `<option value="${p.id}" ${p.id === x.pid ? "selected" : ""}>${p.art} ${esc(p.semester || "ohne Semester")}${p.avbDatei ? " (hat schon AVB)" : ""}</option>`).join("") : ""}</select>${x.art ? ` <span class="mini">erkannt: ${x.art}</span>` : ""}</td>
+      <td class="klein">${x.lektionen.length || "–"}</td><td>${x.erledigt ? "✓ übernommen" : `<button class="klein" onclick="eingangUebernehmen(${i})">übernehmen</button>`}</td></tr>`).join("")}</table>` : `<p class="leise">Der Ordner «${EINGANG}» ist leer.</p>`) : ""}
+    <p class="leise klein">Die App kopiert die Datei nach «Ausbildungsvereinbarungen/‹Semester›», verknüpft sie mit dem Praktikum und übernimmt die gelesenen Lektionen (wenn noch keine eingetragen sind). Die Datei im Eingang bleibt liegen und ist dann als übernommen markiert.</p></details>`;
+}
+async function eingangUebernehmen(i, still) {
+  const x = S.eingang[i]; if (!x.pid) return meldung("Bitte Person und Praktikum wählen.");
+  const p = D.praktika[x.pid];
+  const lektionen = !(p.lektionen || []).length && x.lektionen.length ? lektionenAus((await avbZeilen(await x.h.getFile())) || [], p.semester) : null;
+  await avbHochladen(x.pid, await x.h.getFile(), { still: true, quelle: x.n, lektionen });
+  x.erledigt = true; if (!still) { meldung(`${x.n} → ${p.art} ${nameVon(D.studis[p.student])}`); zeichnen(); }
+}
+async function eingangAlle() { let n = 0; for (let i = 0; i < S.eingang.length; i++) if (!S.eingang[i].erledigt && S.eingang[i].pid) { await eingangUebernehmen(i, true); n++; } meldung(n + " Ausbildungsvereinbarungen übernommen."); zeichnen(); }
+
+/* Reiter «Meldungen» (nur Admin): Abrechnung je Studienjahr, Snapshot je Semester */
+function vMeldungen() {
+  const modus = S.f.meldung || "abrechnung";
+  const kopf = `<h2>Meldungen</h2><div class="leiste"><span class="gr">${[["abrechnung", "Abrechnung (Studienjahr)"], ["snapshot", "Snapshot (Semester)"], ["pensen", "Pensenplanung"]].map(([k, t]) => `<span class="chip ${modus === k ? "an" : ""}" onclick="filter('meldung','${k}')">${t}</span>`).join("")}</span><span class="leise klein">nur für ${esc(adminText())} sichtbar</span></div>`;
+  if (modus === "snapshot") return kopf + vSnapshot();
+  if (modus === "pensen") return kopf + vPensen();
+  const sj = S.f.buchSj || sjVon(semHeute());
+  return kopf + vBuchhaltung().replace("<h2>Buchhaltung</h2>", "") + formulareHtml(sj);
+}
+
+/* ---------- Einstellungen ---------- */
+function vEinstellungen() {
+  const e = D.einst;
+  return `<h2>Einstellungen</h2>
+  <div class="karten">
+  <div class="karte"><h3>Team</h3><div class="form">${(e.team || []).map((t, i) => `<label>Kürzel ${i + 1}</label><span><input id="tk${i}" value="${esc(t.kuerzel)}" size="5"> <input id="tn${i}" value="${esc(t.name)}"> <input id="tm${i}" type="email" placeholder="E-Mail" value="${esc(t.mail || "")}"></span>`).join("")}
+  <label>Zuteilen dürfen</label><input id="zut" value="${esc((e.zuteilung || []).join(", "))}">
+  <label>Admin (sieht alles)</label><input id="adm" value="${esc((e.admin || ["alh"]).join(", "))}" ${istAdmin() ? "" : "disabled"}></div>
+  <p class="leise klein">Wer zuteilt, sieht im Reiter Zuteilung die Auswahl und kann Doz und PxL setzen.</p></div>
+
+  <div class="karte"><h3>Profile (Umfang laut Ablauf)</h3><div class="form">${PROFILE.map((p) => `<label>${p}</label><input id="pr_${p}" value="${esc(Object.entries(e.profile[p] || {}).map(([k, v]) => k + " " + v).join(", "))}">`).join("")}</div>
+  <p class="leise klein">Was nicht aufgeführt ist, erscheint im Raster grau gestreift. Laut «Übersicht Verläufe» (v2408): Monofach SP 18, BP 36, PP 18, PA, IVA · Erstfach SP 18, BP 18, PP 9, IVA · Zweitfach BP 18, PP 9, IVA · Zusatzfach BP 18, PP 18 · aeB Besuch in der eigenen Klasse. IVA entfällt bei Wahlpflicht Berufspädagogik; Additum inkl. PA statt IVA möglich (Erst-/Zweitfach).</p></div>
+  <div class="karte"><h3>Daten</h3><p class="klein">${S.beispiel ? "Beispieldaten (nur im Browser)." : `Stammdaten aus Excel eingelesen: ${esc(S.stamm.stand.replace("T", ", "))}<br><span class="leise">${esc(S.stamm.quelle)}</span>`}<br>${S.eintraege.length} Einträge seither.</p>
+  <button onclick="ordnerWaehlen()">Anderen Ordner wählen</button> <button onclick="beispielLaden()">Beispiel ansehen</button></div>
+  </div><p><button class="haupt" onclick="einstSpeichern()">Einstellungen speichern</button></p>`;
+}
+async function einstSpeichern() {
+  const e = D.einst, team = (e.team || []).map((t, i) => ({ kuerzel: $("#tk" + i).value.trim(), name: $("#tn" + i).value.trim(), mail: $("#tm" + i).value.trim() })).filter((t) => t.kuerzel);
+  const profile = Object.fromEntries(PROFILE.map((p) => [p, Object.fromEntries($("#pr_" + p).value.split(",").map((t) => t.trim()).filter(Boolean).map((t) => { const [k, ...r] = t.split(" "); return [k, r.join(" ") || "ja"]; }))]));
+  await eintragen({ typ: "einst", felder: { team, profile, zuteilung: $("#zut").value.split(",").map((t) => t.trim()).filter(Boolean), ...(istAdmin() ? { admin: $("#adm").value.split(",").map((t) => t.trim()).filter(Boolean) } : {}) } });
+  meldung("Gespeichert.");
+}
+
+/* ====================== Dialoge ====================== */
+function dialog(titel, inhalt, knoepfe) {
+  const d = $("#dlg");
+  d.innerHTML = `<div class="dkopf"><h3>${titel}</h3><button class="klein" onclick="$('#dlg').close()">✕</button></div><div class="dinhalt">${inhalt}</div><div class="dfuss">${knoepfe}</div>`;
+  if (!d.open) d.showModal();
+}
+function verlaufHtml(art, id) {
+  const h = D.hist[art + ":" + id] || []; if (!h.length) return "";
+  const wert = (v) => (v === null ? "–" : typeof v === "object" ? (Array.isArray(v) ? v.join("+") : Object.values(v).filter(Boolean).join(" · ")) : v === true ? "ja" : v === false ? "nein" : String(v));
+  return `<details><summary class="klein leise">Änderungen (${h.length})</summary><ul class="verlauf">${h.slice().reverse().map((e) => `<li>${new Date(e.zeit).toLocaleString("de-CH", { dateStyle: "short", timeStyle: "short" })} · <b>${esc(e.wer)}</b> ${e.typ === "neu" ? "angelegt" : ""}: ${esc(Object.entries(e.felder).map(([k, v]) => `${k} = ${wert(v)}`).join(", ").slice(0, 300))}</li>`).join("")}</ul></details>`;
+}
+const feld = (id, label, wert, typ = "text", extra = "") => `<label for="${id}">${label}</label><input id="${id}" type="${typ}" value="${esc(wert ?? "")}" ${extra}>`;
+const auswahl = (id, label, wert, opts) => `<label for="${id}">${label}</label><select id="${id}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(wert ?? "") === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
+/* Nur geänderte Felder als Eintrag speichern */
+function unterschiede(alt, neu) { const f = {}; for (const [k, v] of Object.entries(neu)) { const a = alt[k] ?? (Array.isArray(v) ? [] : typeof v === "boolean" ? false : ""); if (JSON.stringify(a) !== JSON.stringify(v)) f[k] = v === "" ? null : v; } return f; }
+
+/* Praktikum / Arbeit */
+function praktikumNeu(sid, art) { praktikumDialog(null, { student: sid, art, status: "offen", umfang: sollUmfang(D.studis[sid], art), doz: [] }); }
+function praktikumDialog(id, vorlage) {
+  const p = id ? D.praktika[id] : vorlage, s = D.studis[p.student], istP = ART[p.art].praktikum, sems = semesterListe();
+  const pxlOpts = [["", "–"], ...Object.values(D.pxl).sort((a, b) => a.name.localeCompare(b.name)).map((x) => [x.id, `${x.name} ${x.vorname} – ${schuleKurz(x)} (${x.kanton})`])];
+  const x = D.pxl[p.pxl];
+  const sel = (idn, wert, opts, extra = "") => `<select id="${idn}" ${extra}>${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(wert ?? "") === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
+  const lekN = (p.lektionen || []).length;
+  const inhalt = `
+    <div class="klein" style="margin-bottom:8px"><span class="link" onclick="$('#dlg').close(); personZeigen('${s.id}')">${esc(nameVon(s))}</span> <span class="leise">${esc(s.profil || "")}${s.wohnort ? " · wohnt " + esc(s.wohnort) : ""}</span></div>
+    <div class="kopfzeile">
+      <label>Semester ${sel("f_semester", p.semester || "", [["", "offen"], ...sems.map((x) => [x, x])])}</label>
+      <label>Doz ${(D.einst.team || []).map((t) => `<label class="ohne"><input type="checkbox" class="f_doz" value="${esc(t.kuerzel)}" ${(p.doz || []).includes(t.kuerzel) ? "checked" : ""}> ${esc(t.kuerzel)}</label>`).join(" ")}</label>
+      <label title="Wer an Stelle der zugeteilten Person besucht hat – wird zusätzlich abgerechnet">Vertretung ${(D.einst.team || []).map((t) => `<label class="ohne"><input type="checkbox" class="f_vertretung" value="${esc(t.kuerzel)}" ${(p.vertretung || []).includes(t.kuerzel) ? "checked" : ""}> ${esc(t.kuerzel)}</label>`).join(" ")}</label>
+      <label>Stand ${sel("f_status", p.status, statusListe(p.art).map(([k, t]) => [k, t]))}</label>
+    </div>
+    ${istP ? `
+    <div class="abschnitt"><h4>Praxislehrperson</h4>
+      <div style="display:flex;gap:6px"><select id="f_pxl" style="flex:1;min-width:0" onchange="$('#pxlinfo').innerHTML = pxlInfoFeld(this.value)">${pxlOpts.map(([v, t]) => `<option value="${esc(v)}" ${(p.pxl || "") === v ? "selected" : ""}>${esc(t)}</option>`).join("")}</select><button class="klein" title="PxL ist noch nicht in der Liste" onclick="S.nachPxl = '${id || ""}'; pxlDialog()">＋ neu</button></div>
+      <div id="pxlinfo" style="margin-top:3px">${pxlInfoFeld(p.pxl)}</div>
+      ${!p.pxl && p.pxlText ? `<div class="mini">aus Excel: ${esc(p.pxlText)}</div>` : ""}
+      ${p.art === "BP" && bpHinweis(p) ? `<div class="klein" style="margin-top:3px"><b>${esc(bpHinweis(p))}</b></div>` : ""}
+      ${x && passtNicht(x, p) ? `<div class="klein nein">⚠ ${esc(passtNicht(x, p))}</div>` : ""}</div>
+    <div class="abschnitt"><h4>Ausbildungsvereinbarung</h4>
+      <label class="ohne"><input type="checkbox" id="f_avb" ${p.avb ? "checked" : ""}> liegt vor</label>${p.avbDatei ? ` · ${avbLink(p)}` : ""}
+      ${id ? `<span class="ablage klein-ablage" ondragover="event.preventDefault(); this.classList.add('drueber')" ondragleave="this.classList.remove('drueber')" ondrop="event.preventDefault(); this.classList.remove('drueber'); event.dataTransfer.files[0] && avbHochladen('${id}', event.dataTransfer.files[0])" onclick="avbWaehlen('${id}')">↑ ${p.avbDatei ? "neue Fassung" : "hochladen"} (hierher ziehen)</span>` : `<span class="mini"> Hochladen nach dem ersten Speichern.</span>`}</div>
+    <div class="abschnitt"><h4>Vorbesprechung</h4>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="f_vbDatum" type="date" value="${esc(p.vbDatum || "")}"> <input id="f_vbZeit" type="time" value="${esc(p.vbZeit || "")}"> <input id="f_vbOrt" value="${esc(p.vbOrt || "")}" placeholder="wo / online" size="16"></div></div>
+    <div class="abschnitt"><h4>${p.art === "PP" ? "Prüfungslektion" : "Unterrichtsbesuch"}</h4>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="f_ub" type="date" value="${esc(p.ub || "")}"> <input id="f_ubZeit" type="time" value="${esc(p.ubZeit || "")}"> – <input id="f_ubBis" type="time" value="${esc(p.ubBis || "")}"> <input id="f_ubOrt" value="${esc(p.ubOrt || "")}" placeholder="Klasse / Zimmer" size="14">
+      ${p.ub && id ? `<button class="klein" onclick="besuchMitteilen('${id}')">✉ / 📅 mitteilen</button>` : ""}</div>
+      ${p.ubText && !p.ub ? `<div class="mini">aus Excel: ${esc(p.ubText)}</div>` : ""}
+      ${id ? `<details ${lekN && !p.ub ? "open" : ""} style="margin-top:4px"><summary class="klein">${lekN ? `${lekN} Lektionen aus der AVB – eine als Besuch wählen` : "Lektionen (noch keine)"}</summary>
+        ${lektionenListe(p)}<div style="margin-top:3px"><button class="klein" onclick="lektionenDialog('${id}')">${lekN ? "bearbeiten" : "von Hand eintragen"}</button>${p.avbDatei ? ` <button class="klein" onclick="avbNeuLesen('${id}')">aus der AVB neu lesen</button>` : ""}</div></details>` : ""}</div>`
+    : p.art === "DP" ? `<div class="form">${feld("f_datum", "Prüfungsdatum", p.datum, "date")}
+        <label>Termin</label><span class="klein">${dpTermin(p) ? `<b>${dpTermin(p)}</b> (${dpTermin(p) === "Herbst" ? "September/Januar" : "Juni/Juli"}) – aus dem Semester` : "Semester wählen"}</span>
+        <label>Nachprüfung</label><label class="ohne"><input type="checkbox" id="f_nachpruefung" ${p.nachpruefung ? "checked" : ""}> dies ist eine Nachprüfung</label></div>
+        ${id && p.status === "nachpruefung" && !Object.values(D.praktika).some((q) => q.student === p.student && q.art === "DP" && q.nachpruefung && q.id !== p.id) ? `<p><button class="klein" onclick="praktikumDialog(null, { student: '${p.student}', art: 'DP', status: 'offen', nachpruefung: true, doz: ${esc(JSON.stringify(p.doz || []))} })">＋ Nachprüfung anlegen</button></p>` : ""}`
+    : `<div class="form">${feld("f_thema", "Thema", p.thema)}${feld("f_abgabe", "Abgabe", p.abgabe, "text", 'placeholder="z.B. 6.27"')}
+        ${p.art === "IVA" ? auswahl("f_ects", "Umfang", String(p.ects || 10), [["10", "10 ECTS (zählt in der Abrechnung doppelt)"], ["5", "5 ECTS"]]) : ""}</div>`}
+    <div class="abschnitt"><h4>Notizen</h4><textarea id="f_notiz" rows="2" style="min-height:40px">${esc(p.notiz || "")}</textarea></div>
+    <details class="weiteres"><summary class="klein leise">Weitere Angaben${p.umfang ? " · " + esc(p.umfang) : ""}${p.wunsch ? " · Wunsch: " + esc(p.wunsch) : ""}</summary><div class="form" style="margin-top:6px">
+      ${auswahl("f_art", "Art", p.art, ARTEN.map((a) => [a.k, a.k + " · " + a.name]))}
+      ${istP ? `${feld("f_umfang", "Umfang", p.umfang, "text", `placeholder="${esc(sollUmfang(s, p.art))}"`)}${feld("f_wunsch", "Wunsch (Zeit/Ort)", p.wunsch)}
+      <label>aeB</label><label class="ohne"><input type="checkbox" id="f_aeb" ${p.aeb ? "checked" : ""}> Besuch in der eigenen Klasse</label>
+      ${p.art === "BP" ? `<label>Synergie BMS</label><div><label class="ohne"><input type="checkbox" id="f_bms" ${p.bms ? "checked" : ""}> Teil des BP an BMS / Berufsfachschule</label> <input id="f_bmsText" value="${esc(p.bmsText || "")}" placeholder="wo, wie viele L." size="18"><div class="mini">${esc(synergieRegel(s).text)}${wahlVon(s) !== "BPAED" ? " · setzt Wahlpflicht Berufspädagogik voraus" : ""}</div></div>
+      <label>Verkürzt</label><label class="ohne"><input type="checkbox" id="f_verkuerzt" ${p.verkuerzt ? "checked" : ""}> wegen Unterrichtserfahrung (bewilligt durch Studiengangsleitung)</label>` : ""}` : ""}</div>
+      ${p.excel ? `<details><summary class="klein leise">Text aus der Excel-Liste</summary><div class="excel">${esc(p.exceldoz ? p.exceldoz.replace(/\n/g, " ") + "\n" : "")}${esc(p.excel)}</div>${p.hinweisImport ? `<div class="mini">${esc(p.hinweisImport)}</div>` : ""}</details>` : ""}
+      ${id ? verlaufHtml("praktikum", id) : ""}</details>`;
+  S.vorlage = id ? null : vorlage;
+  dialog(`${id ? "" : "Neu: "}${esc(ART[p.art].name)} · ${esc(nameVon(s))}`, inhalt,
+    `${id ? `<button onclick="praktikumEntfernen('${id}')" style="margin-right:auto">Entfernen</button>` : ""}${x && x.mail && istP && ["offen", "pxl_suchen", "angefragt"].includes(p.status) ? `<a class="knopf" href="${mailAnfrage(Object.assign({}, p))}">✉ Anfrage-Entwurf</a>` : ""}<button onclick="$('#dlg').close()">Abbrechen</button><button class="haupt" onclick="praktikumSpeichern(${id ? `'${id}'` : "null"}, '${s.id}')">Speichern</button>`);
+  $("#dlg").dataset.praktikum = id || "";
+}
+/* Kontakt der gewählten PxL; fehlt die E-Mail, kann man sie hier gleich ergänzen (wird bei der PxL gespeichert) */
+function pxlInfoFeld(xid) {
+  const x = D.pxl[xid]; if (!x) return "";
+  return `<div class="klein">${esc(schuleKurz(x))}${x.reise ? ` · <span class="leise">${esc(x.reise)}</span>` : ""}</div>
+    <div class="klein">${x.mail ? pxlKontakt(x) : `<input id="f_pxlMail" type="email" placeholder="E-Mail von ${esc(pxlKurz(x))} ergänzen" style="width:100%">`}${x.mail && !x.tel ? "" : ""}</div>
+    ${!x.mail ? `<input id="f_pxlTel" placeholder="Telefon" value="${esc(x.tel || "")}" style="margin-top:3px;width:180px">` : ""}`;
+}
+async function praktikumSpeichern(id, sid) {
+  const v = (k) => { const el = $("#f_" + k); return el ? el.value.trim() : undefined; };
+  const art = v("art"), neu = { art, semester: v("semester"), doz: [...document.querySelectorAll(".f_doz:checked")].map((c) => c.value), vertretung: [...document.querySelectorAll(".f_vertretung:checked")].map((c) => c.value), status: v("status"), notiz: v("notiz") };
+  if (ART[art].praktikum) Object.assign(neu, { umfang: v("umfang") ?? "", wunsch: v("wunsch") ?? "", pxl: v("pxl") ?? "", ub: v("ub") ?? "", ubZeit: v("ubZeit") ?? "", ubBis: v("ubBis") ?? "", ubOrt: v("ubOrt") ?? "", vbDatum: v("vbDatum") ?? "", vbZeit: v("vbZeit") ?? "", vbOrt: v("vbOrt") ?? "", avb: !!($("#f_avb") || {}).checked, aeb: !!($("#f_aeb") || {}).checked });
+  if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", verkuerzt: $("#f_verkuerzt").checked });
+  else if (art === "DP") Object.assign(neu, { datum: v("datum") ?? "", nachpruefung: !!($("#f_nachpruefung") || {}).checked });
+  else Object.assign(neu, { thema: v("thema") ?? "", abgabe: v("abgabe") ?? "", ...(art === "IVA" && $("#f_ects") ? { ects: Number(v("ects")) } : {}) });
+  if (!statusListe(art).some((s) => s[0] === neu.status)) neu.status = "offen";
+  // E-Mail/Telefon der PxL hier ergänzt → bei der PxL speichern
+  const xm = v("pxlMail"), xt = v("pxlTel");
+  if (neu.pxl && D.pxl[neu.pxl] && (xm || (xt && xt !== (D.pxl[neu.pxl].tel || "")))) {
+    if (xm && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(xm)) return meldung("Die E-Mail-Adresse sieht nicht richtig aus.");
+    if (!(await eintragen({ typ: "aendern", art: "pxl", ref: neu.pxl, felder: Object.assign(xm ? { mail: xm } : {}, xt ? { tel: xt } : {}) }))) return;
+  }
+  if (id) { const f = unterschiede(D.praktika[id], neu); if (Object.keys(f).length && !(await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f }))) return; }
+  else { const f = Object.fromEntries(Object.entries(neu).filter(([, x]) => x !== "" && x !== false && !(Array.isArray(x) && !x.length))); f.student = sid; if (!(await eintragen({ typ: "neu", art: "praktikum", ref: neueId("n"), felder: f }))) return; }
+  $("#dlg").close();
+}
+async function praktikumEntfernen(id) { if (!confirm("Dieses Praktikum / diese Arbeit aus der Liste nehmen? (Der Eintrag bleibt im Ordner und kann zurückgeholt werden.)")) return; await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { geloescht: true } }); $("#dlg").close(); }
+
+
+/* ---------- Schublade: eine Person auf einen Blick (wie «Detail» in der Praxisbesuche-App Sek I) ---------- */
+function personZeigen(id) { S.detail = id; personZeichnen(); $("#schublade").classList.add("offen"); }
+function personZu() { S.detail = null; $("#schublade").classList.remove("offen"); }
+function personZeichnen() {
+  const s = D.studis[S.detail], el = $("#schublade"); if (!s) return personZu();
+  const stand = (STAND_STUDI.find((x) => x[0] === s.stand) || [, s.stand])[1];
+  const eig = [s.mail && "✉ " + s.mail, s.start && "Beginn " + s.start, s.profil, wahlVon(s) && "Wahlpflicht: " + (WAHL.find((w) => w[0] === wahlVon(s)) || [, ""])[1], s.faecher, s.pensum, s.wohnort && "wohnt " + s.wohnort, s.abschluss && "Abschluss geplant " + s.abschluss].filter(Boolean);
+  const pl = praktikaVon(s.id);
+  const baustein = (p) => {
+    const si = statusInfo(p), x = D.pxl[p.pxl], z = [];
+    if (ART[p.art].praktikum) {
+      if (x) z.push(["PxL", `<span class="link" onclick="pxlDialog('${x.id}')">${esc(pxlKurz(x))}</span> · ${esc(schuleKurz(x))}<br>${pxlKontakt(x)}`]);
+      else if (p.pxlText) z.push(["PxL", `<span class="leise">${esc(p.pxlText)} (aus Excel, nicht in der PxL-Liste)</span>`]);
+      if (p.wunsch && !p.pxl) z.push(["Wunsch", esc(p.wunsch)]);
+      if (p.art === "BP" && bpHinweis(p)) z.push(["Umfang", `${esc(p.umfang || "")} <b>${esc(bpHinweis(p))}</b>`]);
+      z.push(["AVB", p.avbDatei ? avbLink(p) : (p.avb ? "liegt vor (ohne Datei) " : "<span class='leise'>fehlt</span> ") + `<button class="klein" onclick="avbWaehlen('${p.id}')">↑ hochladen</button>`]);
+      if (p.vbDatum) z.push(["Vorbespr.", `${wochentag(p.vbDatum)} ${datumKurz(p.vbDatum)}${p.vbZeit ? ", " + esc(p.vbZeit) + " Uhr" : ""}${p.vbOrt ? " · " + esc(p.vbOrt) : ""}`]);
+      if (p.ub) z.push([p.art === "PP" ? "Prüfung" : "Besuch", `<b>${wochentag(p.ub)} ${ubText(p)}</b>${p.ubOrt ? " · " + esc(p.ubOrt) : ""} <button class="klein" title="Mail-Entwurf und Outlook-Termin" onclick="besuchMitteilen('${p.id}')">✉ / 📅</button>`]);
+      if ((p.lektionen || []).length) z.push(["Lektionen", `<details ${p.ub ? "" : "open"}><summary class="klein">${p.lektionen.length} aus der AVB${p.ub ? "" : " – eine als Besuch wählen"}</summary>${lektionenListe(p)}</details>`]);
+    } else {
+      if (p.art === "DP") { if (p.datum || dpTermin(p)) z.push(["Prüfung", `${p.datum ? `<b>${wochentag(p.datum)} ${datumKurz(p.datum)}</b> · ` : ""}${dpTermin(p)}${p.nachpruefung ? " · Nachprüfung" : ""}`]); }
+      if (p.thema) z.push(["Thema", esc(p.thema)]);
+      if (p.abgabe) z.push(["Abgabe", esc(p.abgabe)]);
+      if (p.art === "IVA") z.push(["Umfang", `${p.ects || 10} ECTS`]);
+    }
+    if (p.notiz) z.push(["Notiz", `<span style="white-space:pre-wrap">${esc(p.notiz)}</span>`]);
+    // Abgeschlossenes nur als eine Zeile
+    if (p.status === "abgeschlossen") return `<div class="baustein kompakt st-gruen" onclick="praktikumDialog('${p.id}')" title="öffnen">✓ <b>${esc(ART[p.art].name)}</b> · ${esc(p.semester || "")} · ${esc(dozText(p))}${x ? " · " + esc(pxlKurz(x)) : p.thema ? " · " + esc(p.thema) : ""}${p.ub ? ` · <span class="leise">${datumKurz(p.ub)}</span>` : ""} ${avbLink(p)}</div>`;
+    return `<div class="baustein st-${si[2]}"><div class="bk"><b>${esc(ART[p.art].name)}${p.zusatz ? " (zusätzlich)" : ""}</b><span class="klein">${esc(p.semester || "ohne Semester")} · ${esc(dozText(p))}${p.aeb ? " · aeB" : ""}</span></div>
+      <div class="klein">${esc(si[1])} <button class="klein" style="float:right" onclick="praktikumDialog('${p.id}')">öffnen</button></div>
+      ${z.length ? `<dl>${z.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>` : ""}</div>`;
+  };
+  const fehlt = ARTEN.filter((a) => anwendbar(s, a.k) && !pl.some((p) => p.art === a.k));
+  const notizen = (D.notizen[s.id] || []).slice().reverse();
+  el.innerHTML = `<div class="skopf"><h2>${esc(s.name)} ${esc(s.vorname)}</h2><button class="klein" onclick="personZu()">Schliessen ✕</button></div>
+  <div class="sinhalt">
+    <div class="eigen">${eig.map((t) => `<span>${esc(t)}</span>`).join("")}<span class="${s.stand === "aktiv" ? "ok" : "nein"}">${esc(stand)}</span></div>
+    <button class="klein" onclick="studiDialog('${s.id}')">Angaben ändern</button>
+    ${istArchiv(s) ? `<button class="klein haupt" onclick="archivieren('${s.id}', false)">Aus dem Archiv zurückholen</button> <span class="mini">im Archiv</span>`
+      : `<button class="klein ${alleFertig(s) ? "haupt" : ""}" title="Zu den Abgeschlossenen legen (jederzeit rückgängig)" onclick="archivieren('${s.id}', true)">ins Archiv</button>${alleFertig(s) ? ` <span class="mini ok">✓ alles abgeschlossen</span>` : ""}`}
+    <h3>Verlauf</h3>
+    ${pl.filter((p) => p.status !== "abgeschlossen").map(baustein).join("")}
+    ${pl.filter((p) => p.status === "abgeschlossen").map(baustein).join("")}
+    ${!pl.length ? `<p class="leise">Noch nichts eingetragen.</p>` : ""}
+    ${!istArchiv(s) ? `<p>${fehlt.map((a) => `<button class="klein" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${esc(a.k)}</button>`).join(" ")} <button class="klein" onclick="praktikumNeu('${s.id}','BP')">＋ weiteres</button></p>` : ""}
+    <h3>Bemerkungen <button class="klein" style="font-family:inherit;vertical-align:middle" onclick="const b=$('#bemBox'); b.hidden=!b.hidden; if(!b.hidden) $('#neueBemerkung').focus()">＋ neu</button></h3>
+    <div id="bemBox" hidden><textarea id="neueBemerkung" rows="2" placeholder="Bemerkung zu ${esc(s.vorname || s.name)} …"></textarea>
+    <p style="margin:4px 0"><button class="haupt klein" onclick="bemerkungSpeichern('${s.id}')">speichern</button></p></div>
+    ${notizen.map((e) => `<div class="notiz">${esc(e.text)}<div class="wer">${esc(e.wer)}, ${new Date(e.zeit).toLocaleString("de-CH", { dateStyle: "short", timeStyle: "short" })}</div></div>`).join("")}
+    ${s.bemerkung ? `<div class="notiz">${esc(s.bemerkung)}<div class="wer">Angaben zur Person${S.stamm.studis.some((x) => x.id === s.id && x.bemerkung === s.bemerkung) ? " (aus der Excel-Liste)" : ""}</div></div>` : ""}
+    ${!notizen.length && !s.bemerkung ? `<p class="leise klein">Noch keine.</p>` : ""}
+    ${verlaufHtml("studi", s.id)}
+  </div>`;
+}
+async function bemerkungSpeichern(id, art = "studi", feldId = "neueBemerkung") {
+  const t = $("#" + feldId).value.trim(); if (!t) return;
+  const e = await eintragen({ typ: "bemerkung", art, ref: id, text: t }); if (!e) return;
+  meldung("Bemerkung gespeichert.");
+  // im offenen Fenster gleich zeigen, ohne andere Eingaben zu verlieren
+  if (art === "pxl" && $("#pxlNotizen")) { $("#pxlNotizen").insertAdjacentHTML("afterbegin", notizHtml(e)); $("#" + feldId).value = ""; const k = $("#pxlKeine"); if (k) k.remove(); }
+}
+
+/* Studierende */
+function studiDialog(id) {
+  const s = id ? D.studis[id] : { name: "", vorname: "", start: semHeute(), stand: "aktiv", profil: "Monofach" };
+  const inhalt = `<div class="form">${feld("s_name", "Name", s.name)}${feld("s_vorname", "Vorname", s.vorname)}${feld("s_start", "Beginn", s.start, "text", 'placeholder="HS26"')}
+    ${auswahl("s_profil", "Profil", s.profil || "", [["", "?"], ...PROFILE.map((p) => [p, p])])}
+    ${s.profilText ? `<label></label><span class="klein leise">Excel: ${esc(s.profilText)}</span>` : ""}
+    ${auswahl("s_wahl", "Wahlpflichtbereich", wahlVon(s), WAHL)}
+    <label></label><span class="mini">Berufspädagogik erlaubt die Synergie im BP (Teil an BMS/Berufsfachschule, nur Mono- und Erstfach); Additum inkl. PA nur Erst- und Zweitfach.</span>
+    ${feld("s_faecher", "Fächer", s.faecher)}${feld("s_pensum", "Pensum", s.pensum, "text", 'placeholder="Vollzeit / Teilzeit (arbeitet 60%)"')}${feld("s_wohnort", "Wohnort", s.wohnort)}${feld("s_mail", "E-Mail", s.mail, "email")}
+    ${feld("s_abschluss", "Abschluss geplant", s.abschluss)}${auswahl("s_stand", "Stand", s.stand, STAND_STUDI)}
+    <label class="voll">Bemerkungen</label><textarea class="voll" id="s_bemerkung">${esc(s.bemerkung || "")}</textarea></div>
+    ${id ? verlaufHtml("studi", id) : ""}`;
+  dialog(id ? esc(nameVon(s)) : "Neue Person", inhalt, `<button onclick="$('#dlg').close()">Abbrechen</button><button class="haupt" onclick="studiSpeichern(${id ? `'${id}'` : "null"})">Speichern</button>`);
+}
+async function studiSpeichern(id) {
+  const v = (k) => $("#s_" + k).value.trim();
+  const neu = { name: v("name"), vorname: v("vorname"), start: v("start").replace(/\s/g, "").toUpperCase(), profil: v("profil"), wahl: v("wahl"), wpb: v("wahl") === "BPAED", faecher: v("faecher"), pensum: v("pensum"), wohnort: v("wohnort"), mail: v("mail"), abschluss: v("abschluss"), stand: v("stand"), bemerkung: v("bemerkung") };
+  if (!neu.name) return meldung("Bitte einen Namen eintragen.");
+  if (id) { const f = unterschiede(D.studis[id], neu); if (Object.keys(f).length && !(await eintragen({ typ: "aendern", art: "studi", ref: id, felder: f }))) return; $("#dlg").close(); }
+  else {
+    const sid = neueId("s"); if (!(await eintragen({ typ: "neu", art: "studi", ref: sid, felder: neu }))) return;
+    // Bausteine laut Profil gleich anlegen (ohne Semester)
+    for (const a of ARTEN) if (anwendbar(neu, a.k)) await eintragen({ typ: "neu", art: "praktikum", ref: neueId("n"), felder: { student: sid, art: a.k, status: "offen", ...(sollUmfang(neu, a.k) ? { umfang: sollUmfang(neu, a.k) } : {}) } });
+    $("#dlg").close(); personZeigen(sid);
+  }
+}
+
+/* Praxislehrpersonen */
+function pxlDialog(id) {
+  const x = id ? D.pxl[id] : { name: "", vorname: "", schultyp: "Gymnasium", kanton: "LU" }, sems = semesterListe().filter((s) => semKey(s) >= semKey(semHeute()) - 1);
+  const bt = id ? betreuungenVon(id) : [], notizen = id ? (D.notizen[id] || []).slice().reverse() : [];
+  const angaben = `<div class="form">${feld("x_name", "Name", x.name)}${feld("x_vorname", "Vorname", x.vorname)}
+    ${auswahl("x_schultyp", "Schultyp", x.schultyp, [["Gymnasium", "Gymnasium / Kantonsschule"], ["FMS", "FMS"], ["BMS", "BMS / Berufsfachschule"]])}
+    ${feld("x_kanton", "Kanton", x.kanton)}${feld("x_schule", "Schule", x.schule)}${feld("x_mail", "E-Mail", x.mail, "email")}${feld("x_tel", "Telefon", x.tel)}
+    ${feld("x_reise", "Reiseweg (SBB + zu Fuss)", x.reise)}${feld("x_adresse", "Adresse", x.adresse)}${feld("x_nebenfach", "Nebenfach", x.nebenfach)}${feld("x_hochschule", "Hochschule", x.hochschule)}
+    ${feld("x_hinweise", "Hinweise", x.hinweise, "text", 'placeholder="z.B. ab Aug 26, kein PP"')}${feld("x_kurz", "Achtung", x.kurz, "text", 'placeholder="z.B. 70-Min.-Lektionen"')}
+    ${x.planung ? `<label>Excel «Betreuung HS26»</label><span class="klein">${esc(x.planung)}</span>` : ""}</div>`;
+  const inhalt = !id ? angaben : `
+    <div class="klein">${esc(schuleKurz(x))} (${esc(x.kanton)}) · ${esc(x.schultyp)}${x.reise ? ` · <span class="leise">${esc(x.reise)}</span>` : ""}<br>${pxlKontakt(x)}${x.hinweise ? `<br><span class="leise">${esc(x.hinweise)}</span>` : ""}${x.kurz && x.kurz.trim() ? ` <span class="nein">${esc(x.kurz)}</span>` : ""}</div>
+    <div class="abschnitt"><h4>Verfügbarkeit</h4><table class="lekttab"><tbody>${sems.map((s) => { const v = verfVon(x, s); return `<tr><td><b>${s}</b></td><td><select id="v_${s}">${VERF.map(([k, t]) => `<option value="${k}" ${(v.stand || "") === k ? "selected" : ""}>${t}</option>`).join("")}</select></td><td><input id="vn_${s}" value="${esc(v.notiz || "")}" placeholder="z.B. nur BP, max. 1" size="28"></td></tr>`; }).join("")}</tbody></table></div>
+    <div class="abschnitt"><h4>Bemerkungen <button class="klein" onclick="const b=$('#pxlBemBox'); b.hidden=!b.hidden; if(!b.hidden) $('#pxlBem').focus()">＋ neu</button></h4>
+      <div id="pxlBemBox" hidden><textarea id="pxlBem" rows="2" placeholder="Bemerkung zu ${esc(pxlKurz(x))} …"></textarea><button class="klein haupt" onclick="bemerkungSpeichern('${id}', 'pxl', 'pxlBem')">speichern</button></div>
+      <div id="pxlNotizen">${notizen.map(notizHtml).join("") || `<p class="leise klein" id="pxlKeine">Noch keine.</p>`}</div></div>
+    <div class="abschnitt"><h4>Begleitungen (${bt.length})</h4>${bt.length ? `<ul class="klein" style="margin:0;padding-left:18px">${bt.slice(0, 6).map((p) => `<li><span class="link" onclick="praktikumDialog('${p.id}')">${p.semester || "–"} · ${p.art} ${esc(nameVon(D.studis[p.student]))}</span> <span class="punkt st-${statusInfo(p)[2]}"></span> ${avbLink(p)}</li>`).join("")}</ul>${bt.length > 6 ? `<details><summary class="mini">${bt.length - 6} frühere</summary><ul class="klein">${bt.slice(6).map((p) => `<li>${p.semester || "–"} · ${p.art} ${esc(nameVon(D.studis[p.student]))}</li>`).join("")}</ul></details>` : ""}` : `<p class="leise klein">Keine.</p>`}
+      ${(x.betreuungen || []).length ? `<details><summary class="mini">laut Excel-Spalten «Betreuung»</summary><p class="klein leise">${x.betreuungen.map((b) => `${b.semester} ${esc(b.text)}`).join(" · ")}</p></details>` : ""}</div>
+    <details class="weiteres"><summary class="klein leise">Angaben ändern</summary>${angaben}${verlaufHtml("pxl", id)}</details>`;
+  dialog(id ? esc(pxlKurz(x)) : "Neue Praxislehrperson", inhalt, `<button onclick="$('#dlg').close()">Abbrechen</button><button class="haupt" onclick="pxlSpeichern(${id ? `'${id}'` : "null"})">Speichern</button>`);
+}
+const notizHtml = (e) => `<div class="notiz">${esc(e.text)}<div class="wer">${esc(e.wer)}, ${new Date(e.zeit).toLocaleString("de-CH", { dateStyle: "short", timeStyle: "short" })}</div></div>`;
+async function pxlSpeichern(id) {
+  const v = (k) => $("#x_" + k).value.trim();
+  const neu = Object.fromEntries(["name", "vorname", "schultyp", "kanton", "schule", "mail", "tel", "reise", "adresse", "nebenfach", "hochschule", "hinweise", "kurz"].map((k) => [k, v(k)]));
+  if (!neu.name) return meldung("Bitte einen Namen eintragen.");
+  if (id) {
+    const f = unterschiede(D.pxl[id], neu);
+    for (const s of semesterListe().filter((s) => semKey(s) >= semKey(semHeute()) - 1)) {
+      const el = $("#v_" + s); if (!el) continue; const alt = verfVon(D.pxl[id], s), stand = el.value, notiz = $("#vn_" + s).value.trim();
+      if ((alt.stand || "") !== stand || (alt.notiz || "") !== notiz) f["verfuegbar." + s] = stand || notiz ? { stand, notiz } : null;
+    }
+    if (Object.keys(f).length && !(await eintragen({ typ: "aendern", art: "pxl", ref: id, felder: f }))) return;
+  } else {
+    const xid = neueId("p");
+    if (!(await eintragen({ typ: "neu", art: "pxl", ref: xid, felder: neu }))) return;
+    // aus einem Praktikum heraus angelegt: gleich dort eintragen und zurück
+    if (S.nachPxl !== undefined && S.nachPxl !== null) {
+      const pid = S.nachPxl; S.nachPxl = null;
+      if (pid && D.praktika[pid]) { await eintragen({ typ: "aendern", art: "praktikum", ref: pid, felder: { pxl: xid } }); return praktikumDialog(pid); }
+      if (S.vorlage) return praktikumDialog(null, Object.assign({}, S.vorlage, { pxl: xid }));
+    }
+  }
+  S.nachPxl = null;
+  $("#dlg").close();
+}
+
+/* ====================== Beispiel (erfundene Daten) ====================== */
+async function beispielLaden() {
+  const w = new MemOrdner("App"), o = await w.getDirectoryHandle("Daten", { create: true }); S.wurzel = w; S.ordner = o; S.beispiel = true; S.detail = null; S.privat = null; S.pensen = null; S.eingang = null; S.vorlagen = null;
+  const vn = ["Lea", "Noah", "Mia", "Luca", "Sara", "Jonas", "Elena", "David", "Nina", "Tim", "Anna", "Ben"], nn = ["Muster", "Beispiel", "Probst", "Fiktiv", "Erfunden", "Platzhalter", "Annahme", "Vorlage", "Skizze", "Entwurf", "Testa", "Modell"];
+  const schulen = [["LU", "Gymnasium", "Kantonsschule Seeblick"], ["LU", "Gymnasium", "Kantonsschule Bergtal"], ["ZG", "Gymnasium", "Kantonsschule Am See"], ["SZ", "Gymnasium", "Stiftsschule Talgrund"], ["AG", "Gymnasium", "Alte Kantonsschule Flussstadt"], ["ZH", "Gymnasium", "Gymnasium Hügelweg"], ["LU", "FMS", "FMS Seeblick"], ["ZG", "FMS", "FMS Am See"], ["ZH", "BMS", "Berufsmaturitätsschule Werkstadt"], ["NW", "Gymnasium", "Kollegium Talboden"]];
+  const pxl = schulen.flatMap(([kt, typ, sch], i) => [0, 1].slice(0, i < 6 ? 2 : 1).map((j) => ({ id: `px${i}${j}`, kanton: kt, schultyp: typ, name: nn[(i * 2 + j) % 12] + (j ? "-Lehrer" : "-Lehrerin"), vorname: vn[(i + j * 5) % 12], mail: `pxl${i}${j}@beispiel.invalid`, tel: "", schule: sch, reise: `ca. ${1 + (i % 3) / 2} Std.`, hinweise: ["ab Aug 26", "", "nur BP", "", "kein PP", ""][(i + j) % 6], kurz: i === 3 ? "70-Min.-Lektionen" : "", betreuungen: [], verfuegbar: { HS26: { stand: ["ja", "", "nein", "angefragt", "ja", "vielleicht"][(i + j) % 6] }, FS27: { stand: ["ja", "ja", "", "", "nein", ""][(i + j) % 6] } } })));
+  const studis = [], praktika = [];
+  const plan = [
+    ["FS25", "Monofach", ["FS25", "wec", "SP", "abgeschlossen", 0], ["HS25", "alh", "BP", "abgeschlossen", 6], ["HS26", "wec", "PP", "ub_geplant", 2], ["HS26", "wec", "PA", "laeuft"]],
+    ["FS25", "Monofach", ["FS25", "wec", "SP", "abgeschlossen", 1], ["FS26", "alh", "BP", "abgeschlossen", 7], ["HS26", "alh+wec", "PP", "angefragt", 4], ["FS27", "wec", "IVA", "offen"]],
+    ["HS25", "Monofach", ["HS25", "wec", "SP", "abgeschlossen", 3], ["HS26", "alh+wec", "BP", "abgeschlossen", 0], ["FS27", "", "PP", "pxl_suchen"]],
+    ["HS25", "Erstfach", ["HS25", "alh", "SP", "abgeschlossen", 2], ["HS26", "wec", "BP", "avb", 5], ["", "", "PP", "offen"]],
+    ["HS26", "Monofach", ["HS26", "wec", "SP", "ub_geplant", 8], ["HS26", "wec", "BP", "angefragt", 9], ["", "", "PP", "offen"]],
+    ["HS26", "Zusatzfach", ["HS26", "wec", "BP", "pxl_suchen"], ["", "", "PP", "offen"]],
+    ["HS26", "Monofach", ["HS26", "alh+wec", "SP", "zusage", 10], ["FS27", "", "BP", "offen"], ["", "", "PP", "offen"]],
+    ["FS26", "Zweitfach", ["FS26", "wec", "BP", "abgeschlossen", 11], ["FS27", "", "PP", "pxl_suchen"], ["FS27", "wec", "IVA", "laeuft"]],
+    ["HS24", "Monofach", ["HS24", "wec", "SP", "abgeschlossen", 4], ["HS25", "wec", "BP", "abgeschlossen", 6], ["HS25", "alh", "PP", "abgeschlossen", 1], ["HS25", "wec", "PA", "abgeschlossen"], ["FS27", "wec", "IVA", "laeuft"]],
+  ];
+  const pxlListe = pxl.map((x) => x.id), d = (sem, t) => { const y = 2000 + Number(sem.slice(2)); return sem.startsWith("HS") ? `${y}-${t < 5 ? "09" : t < 9 ? "11" : "12"}-${String(4 + t * 2).padStart(2, "0")}` : `${y}-0${3 + (t % 4)}-${String(5 + t).padStart(2, "0")}`; };
+  plan.forEach(([start, profil, ...pr], i) => {
+    const sid = "sb" + i;
+    studis.push({ id: sid, name: nn[i], vorname: vn[(i + 3) % 12], mail: i % 4 ? `stud${i}@beispiel.invalid` : "", start, profil, faecher: "MA", wohnort: ["Luzern", "Zug", "Olten", "Altdorf", "Zürich", "Sursee", "Horw", "Basel", "Schwyz"][i], pensum: i % 3 ? "Vollzeit" : "Teilzeit (arbeitet 50%)", wpb: i === 2, abschluss: "", bemerkung: i === 4 ? "Wunsch: nicht vor 8 Uhr" : "", stand: i === 8 ? "aktiv" : "aktiv" });
+    pr.forEach(([sem, doz, art, status, px], j) => {
+      const p = { id: `pb${i}${j}`, student: sid, art, semester: sem, doz: doz ? doz.split("+") : [], status };
+      if (ART[art].praktikum) { p.umfang = { SP: "18 h", BP: profil === "Monofach" ? "36 h" : "18 h", PP: profil === "Monofach" ? "18 h" : "9 h" }[art]; if (px !== undefined && !["offen", "pxl_suchen"].includes(status)) p.pxl = pxlListe[(px + i) % pxlListe.length]; if (["ub_geplant", "abgeschlossen"].includes(status)) { p.ub = d(sem, (i + j) % 10); p.ubZeit = ["08:00", "09:45", "10:15", "13:30"][(i + j) % 4]; p.ubBis = ["08:45", "10:30", "11:00", "14:15"][(i + j) % 4]; p.avb = true; }
+        if (p.ub) { const kl = ["2a", "3b", "4c", "1d"][(i + j) % 4], raum = String(100 + i * 7 + j); p.lektionen = [-14, -7, 0, 7, 14, 21].map((t, k) => { const d = new Date(p.ub + "T12:00:00"); d.setDate(d.getDate() + t); return { art: k === 0 ? "H" : "U", datum: d.toISOString().slice(0, 10), von: p.ubZeit, bis: p.ubBis, klasse: kl, anzahl: "1", raum }; }); } if (status === "avb") p.avb = true; if (status === "pxl_suchen") p.wunsch = ["Jan / Feb", "Okt / Nov, nicht Zug", "ab März"][i % 3]; }
+      else { p.thema = ["Modellieren im Unterricht", "Escape-Room und lineare Funktionen", "Lernen mit Beispielaufgaben", "Funktionen dynamisch"][i % 4]; p.abgabe = status === "abgeschlossen" ? "" : "6.27"; }
+      praktika.push(p);
+    });
+  });
+  await schreibeJSON("stamm/studierende.json", { personen: studis });
+  await schreibeJSON("stamm/praxislehrpersonen.json", { personen: pxl, schultypen: { Gymnasium: "PP nur an Kantonsschule", FMS: "PP geht nicht, max. SP oder BP (nicht beides)", BMS: "PP geht nicht, max. SP oder BP (nicht beides)" } });
+  await schreibeJSON("stamm/praktika.json", { praktika, stand: new Date().toISOString().slice(0, 19), quelle: "Beispieldaten" });
+  await schreibeJSON("stamm/einstellungen.json", Object.assign({}, EINST_STD, { team: [{ kuerzel: "alh", name: "Doz Anna" }, { kuerzel: "wec", name: "Doz Beat", mail: "doz.beat@beispiel.invalid" }], ziele: [{ text: "Ziel HS26/FS27", semester: ["HS26", "FS27"], SPBP: 10, PP: 7 }] }));
+  if (!S.ich) S.ich = "alh";
+  await allesLaden();
+}
+
+/* ====================== Start ====================== */
+(async function () {
+  if (location.hash === "#beispiel") return beispielLaden();
+  try { if (await ordnerZugriff()) return allesLaden(); } catch (e) {}
+  zeichnen();
+})();
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#dlg").open && S.detail) personZu(); });
+</script>
+</body>
+</html>
