@@ -397,6 +397,9 @@ function berechnen() {
     (D.hist[e.art + ":" + e.ref] ||= []).push(e);
   }
   for (const p of Object.values(D.praktika)) if (p.geloescht) delete D.praktika[p.id];
+  // Diplomprüfung: keine Zuteilung – wir prüfen immer beide
+  const alleDoz = (D.einst.team || []).map((t) => t.kuerzel);
+  for (const p of Object.values(D.praktika)) if (p.art === "DP") { p.doz = alleDoz.slice(); p.vertretung = []; }
 }
 async function eintragen(e) {
   if (!S.ich) { meldung("Bitte oben rechts «Ich bin» wählen."); return false; }
@@ -1540,8 +1543,8 @@ function praktikumDialog(id, vorlage) {
     <div class="klein" style="margin-bottom:8px"><span class="link" onclick="$('#dlg').close(); personZeigen('${s.id}')">${esc(nameVon(s))}</span> <span class="leise">${esc(s.profil || "")}${s.wohnort ? " · wohnt " + esc(s.wohnort) : ""}</span></div>
     <div class="kopfzeile">
       <label>Semester ${sel("f_semester", p.semester || "", [["", "offen"], ...sems.map((x) => [x, x])])}</label>
-      <label>Doz ${dozPillen("f_doz", p.doz)}</label>
-      <label title="Wer an Stelle der zugeteilten Person besucht hat – wird zusätzlich abgerechnet">Vertretung ${dozPillen("f_vertretung", p.vertretung)}</label>
+      ${p.art === "DP" ? `<label>Prüfung ${dozMarken(p)} <span class="mini">wir prüfen immer beide</span></label>` : `<label>Doz ${dozPillen("f_doz", p.doz)}</label>`}
+      ${p.art === "DP" ? "" : `<label title="Wer an Stelle der zugeteilten Person besucht hat – wird zusätzlich abgerechnet">Vertretung ${dozPillen("f_vertretung", p.vertretung)}</label>`}
       <label>Stand ${sel("f_status", p.status, statusListe(p.art).map(([k, t]) => [k, t]))}</label>
     </div>
     ${istP ? `
@@ -1592,7 +1595,7 @@ function pxlInfoFeld(xid) {
 }
 async function praktikumSpeichern(id, sid) {
   const v = (k) => { const el = $("#f_" + k); return el ? el.value.trim() : undefined; };
-  const art = v("art"), neu = { art, hinweis: v("hinweis") ?? "", semester: v("semester"), doz: gewaehlteDoz("f_doz"), vertretung: gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
+  const art = v("art"), neu = { art, hinweis: v("hinweis") ?? "", semester: v("semester"), doz: art === "DP" ? (D.einst.team || []).map((t) => t.kuerzel) : gewaehlteDoz("f_doz"), vertretung: art === "DP" ? [] : gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
   if (ART[art].praktikum) Object.assign(neu, { umfang: v("umfang") ?? "", wunsch: v("wunsch") ?? "", pxl: v("pxl") ?? "", ub: v("ub") ?? "", ubZeit: v("ubZeit") ?? "", ubBis: v("ubBis") ?? "", ubOrt: v("ubOrt") ?? "", vbDatum: v("vbDatum") ?? "", vbZeit: v("vbZeit") ?? "", vbOrt: v("vbOrt") ?? "", avb: !!($("#f_avb") || {}).checked, aeb: !!($("#f_aeb") || {}).checked });
   if (art === "BP" && $("#f_bms") && $("#f_bms").checked && D.studis[sid] && D.studis[sid].wahl !== "BPAED") await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { wahl: "BPAED", wpb: true } });
   if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", bmsPxl: v("bmsPxl") ?? "", bmsUmfang: v("bmsUmfang") ?? "", verkuerzt: $("#f_verkuerzt").checked });
