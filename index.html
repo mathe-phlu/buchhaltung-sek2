@@ -72,6 +72,7 @@ tr.klickbar:hover td { background: #fbf8f1; cursor: pointer; }
 .dozwahl { display: inline-block; border: 1.5px solid var(--f); color: var(--f); background: #fff; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 3px; line-height: 18px; user-select: none; }
 .dozwahl.an { background: var(--f); color: #fff; }
 .dozwahl.f_vertretung.an { background: #fff; color: var(--f); border-style: dashed; box-shadow: inset 0 0 0 1px var(--f); }
+input.semfeld { width: 64px; text-transform: uppercase; } input.beginn { font-size: 12px; padding: 0 3px; width: 52px; border-color: #ddd; }
 select.beginn { font-size: 12px; padding: 0 2px; border-color: #ddd; }
 .dozm { display: inline-block; color: #fff; border-radius: 4px; padding: 0 5px; font-size: 11px; font-weight: 700; margin-right: 2px; line-height: 16px; }
 .dozm.vertr { background: #fff; border: 1.5px dashed; }
@@ -197,6 +198,7 @@ details > summary { cursor: pointer; margin: 6px 0; }
 </header>
 <main id="main"></main>
 <aside id="schublade"></aside>
+<datalist id="semListe"></datalist>
 <dialog id="dlg"></dialog>
 
 <script>
@@ -275,6 +277,16 @@ function semesterListe() {
   let lo = semKey(semHeute()) - 2, hi = semKey(semHeute()) + 3;
   for (const p of Object.values(D.praktika)) if (p.semester) { lo = Math.min(lo, semKey(p.semester)); hi = Math.max(hi, semKey(p.semester)); }
   const l = []; for (let k = lo; k <= hi; k++) l.push(semAus(k)); return l;
+}
+/* Semester eintippen: «hs26», «H 26», «Herbst 26», «f27» → HS26 / FS27; leer = offen */
+function semNorm(t) {
+  const m = /^\s*(hs|h|herbst|fs|f|frühling|fruehling|frühjahr)\s*(?:20)?(\d{2})\s*$/i.exec(String(t || ""));
+  return m ? (/^h/i.test(m[1]) ? "HS" : "FS") + m[2] : String(t || "").trim() ? null : "";
+}
+/* neueste zuerst; das aktuelle Semester ist markiert */
+function semVorschlaege() { const l = []; for (let k = semKey(semHeute()) + 3; k >= semKey("FS21"); k--) l.push(semAus(k)); return l; }
+function semFeld(id, wert, extra = "") {
+  return `<input id="${id}" class="semfeld" list="semListe" value="${esc(wert || "")}" placeholder="z.B. ${semHeute()}" size="6" autocomplete="off" ${extra}>`;
 }
 function datumKurz(iso) { if (!iso) return ""; const [y, m, d] = iso.split("-"); return `${Number(d)}.${Number(m)}.${y.slice(2)}`; }
 function heuteIso() { return new Date().toISOString().slice(0, 10); }
@@ -495,6 +507,7 @@ function bmsTeile(p) {
 const FARBEN_STD = { alh: "#7b4fa3", wec: "#2a5db0" };   // lila und blau – nicht zu verwechseln mit rot/gelb/grün des Stands
 const dozFarbe = (k) => ((D.einst.team || []).find((t) => t.kuerzel === k) || {}).farbe || FARBEN_STD[k] || "#777";
 function dozMarken(p) {
+  if (p.art === "DP") return "";   // Diplomprüfung: keine Zuteilung, keine Doz-Angabe
   const d = (p.doz || []).map((k) => `<span class="dozm" style="background:${dozFarbe(k)}">${esc(k)}</span>`).join("");
   const v = (p.vertretung || []).map((k) => `<span class="dozm vertr" style="border-color:${dozFarbe(k)};color:${dozFarbe(k)}" title="hat vertreten">${esc(k)}</span>`).join("");
   return (d || `<span class="dozm offen" title="noch keine Doz">?</span>`) + v;
@@ -775,11 +788,12 @@ const adminText = () => (D.einst.admin || ["alh"]).map((k) => ((D.einst.team || 
 const darfSehen = (k) => (k === "meldungen" ? istAdmin() : k === "zuteilung" ? istAdmin() || (D.einst.zuteilung || []).includes(S.ich) : true);
 const REITER = [["start", "Start"], ["studierende", "Studierende"], ["pxl", "Praxislehrpersonen"], ["zuteilung", "Zuteilung"], ["meldungen", "Meldungen"], ["einstellungen", "⚙ Einstellungen"]];
 function zeichnen() {
+  if ($("#semListe") && !$("#semListe").children.length) $("#semListe").innerHTML = semVorschlaege().map((x) => `<option value="${x}">${x === semHeute() ? "aktuelles Semester" : ""}</option>`).join("");
   // frühere Reiter (Verläufe, Lektionen) sind in Studierende bzw. Start aufgegangen
   if (S.ansicht === "verlaeufe") S.ansicht = "studierende"; if (S.ansicht === "lektionen") S.ansicht = "start";
   if (S.ansicht === "buchhaltung") S.ansicht = "meldungen";
   if (!darfSehen(S.ansicht)) S.ansicht = "start";
-  if (S.ansicht === "studierende" && S.f.studAnsicht === "liste" && (S.f.sem || S.f.status)) { S.f.sem = ""; S.f.status = ""; }
+  if (false) { S.f.sem = ""; S.f.status = ""; }
   const team = D.einst.team || [];
   $("#ich").innerHTML = `<option value="">– wählen –</option>` + team.map((t) => `<option value="${esc(t.kuerzel)}" ${t.kuerzel === S.ich ? "selected" : ""}>${esc(t.kuerzel)} · ${esc(t.name)}</option>`).join("");
   $("#beispielMarke").innerHTML = S.beispiel ? `<span class="marke warn">Beispieldaten – nichts wird gespeichert</span>` : "";
@@ -868,7 +882,7 @@ function kachel(p) {
   const si = statusInfo(p), x = D.pxl[p.pxl], fertig = erledigt(p);
   const ab = (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)));
   const z = (inhalt, cls = "", titel = "") => `<div class="kz ${cls}" ${titel ? `title="${esc(titel)}"` : ""}>${inhalt}</div>`;
-  const kopf = z(`<span>${dozMarken(p)} ${esc(p.semester || "Sem. ?")}${ART[p.art].praktikum && umfangKurz(p) ? ` · ${umfangKurz(p)}` : ""}${p.aeb ? " · aeB" : ""}</span><span>${p.avbDatei ? "📄" : ""}${fertig ? "✓" : ""}</span>`, "k1", [si[1], p.umfang && "Umfang: " + p.umfang, p.umfangNotiz].filter(Boolean).join("\n"));
+  const kopf = z(`<span>${p.art === "DP" ? "" : dozMarken(p) + " "}${esc(p.semester || "Sem. ?")}${ART[p.art].praktikum && umfangKurz(p) ? ` · ${umfangKurz(p)}` : ""}${p.aeb ? " · aeB" : ""}</span><span>${p.avbDatei ? "📄" : ""}${fertig ? "✓" : ""}</span>`, "k1", [si[1], p.umfang && "Umfang: " + p.umfang, p.umfangNotiz].filter(Boolean).join("\n"));
   const zeilen = [];
   if (ART[p.art].praktikum) {
     if (x) { zeilen.push(z(esc(pxlKurz(x)), "", x.mail || "")); zeilen.push(z(esc(schuleKurz(x)), "leise")); }
@@ -911,10 +925,9 @@ function vVerlaeufe() {
 /* ---------- Studierende ---------- */
 /* Beginn (Startsemester) direkt in der Liste wählen */
 function beginnFeld(s) {
-  const opts = []; for (let k = semKey(semHeute()) + 2; k >= semKey("FS20"); k--) opts.push(semAus(k));
-  return `<select class="beginn" onclick="event.stopPropagation()" onchange="beginnSetzen('${s.id}', this.value)"><option value="">?</option>${opts.map((x) => `<option ${x === s.start ? "selected" : ""}>${x}</option>`).join("")}</select>`;
+  return `<input class="beginn semfeld" list="semListe" value="${esc(s.start || "")}" placeholder="?" size="5" autocomplete="off" onclick="event.stopPropagation()" onchange="beginnSetzen('${s.id}', this.value)">`;
 }
-async function beginnSetzen(id, sem) { await eintragen({ typ: "aendern", art: "studi", ref: id, felder: { start: sem || null } }); }
+async function beginnSetzen(id, t) { const sem = semNorm(t); if (sem === null) { meldung("Beginn bitte als HS26 oder FS27 eintippen."); return zeichnen(); } await eintragen({ typ: "aendern", art: "studi", ref: id, felder: { start: sem || null } }); }
 /* Filter wie in der Praxisbesuche-App: beschriftete Felder in einer Zeile, darunter was aktiv ist */
 function filterBox(mitPraktikum, anzahl) {
   const sel = (k, opts) => `<select onchange="filter('${k}', this.value)">${opts.map(([v, t]) => `<option value="${v}" ${(S.f[k] || "") === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
@@ -925,13 +938,13 @@ function filterBox(mitPraktikum, anzahl) {
     <label>Suchen<input type="search" id="suche" placeholder="Name, Ort, PxL, Thema" value="${esc(S.f.suche)}" oninput="filterTipp('suche', this.value)"></label>
     <label>Personen${sel("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</label>
     <label>Doz${sel("doz", [["", "alle"], ...team, ["beide", "zu zweit"]])}</label>
-    ${mitPraktikum ? `<label>Semester${sel("sem", [["", "alle"], ...semesterListe().map((x) => [x, x])])}</label>
+    ${mitPraktikum ? `<label>Semester${sel("sem", [["", "alle"], ...semesterListe().slice().reverse().map((x) => [x, x + (x === semHeute() ? " (aktuell)" : "")])])}</label>
     <label>Stand${sel("status", [["", "alle"], ["weiss", "zu organisieren"], ["rot", "PxL suchen / angefragt"], ["gelb", "läuft"], ["gruen", "abgeschlossen"], ["anger", "angerechnet"]])}</label>` : ""}
     <span class="ffuss"><b>${anzahl}</b> Personen${aktiv.length ? ` · <span class="faktiv">${aktiv.map(esc).join(" · ")}</span> <span class="link klein" onclick="filterZurueck()">zurücksetzen</span>` : ""}</span>
     <button style="margin-left:auto" onclick="studiDialog()">＋ neue Person</button></div>`;
 }
 function filterZurueck() { Object.assign(S.f, { stand: "aktiv", doz: "", sem: "", status: "", suche: "" }); merke("filter", JSON.stringify(S.f)); zeichnen(); }
-const ansichtUmschalter = () => `<div class="umschalter">${[["kacheln", "▦ Verlauf wie Excel"], ["liste", "☰ übersichtliche Liste"]].map(([k, t]) => `<span class="chip ${(S.f.studAnsicht || "kacheln") === k ? "an" : ""}" onclick="filter('studAnsicht','${k}')">${t}</span>`).join("")}</div>`;
+const ansichtUmschalter = () => "";
 function vStudierende() {
   const liste = studisGefiltert();
   // je Baustein ein farbiges Kästchen; Details in der Seitenleiste
@@ -945,7 +958,7 @@ function vStudierende() {
     if (!p) return alleFertig(s) && !istArchiv(s) ? `<span class="ok">✓ alles abgeschlossen</span> <button class="klein" onclick="event.stopPropagation(); archivieren('${s.id}', true)">ins Archiv</button>` : "";
     return `${dozMarken(p)} <b>${p.art}</b> ${esc(p.semester || "ohne Semester")} · ${esc(statusInfo(p)[1])}${p.ub ? ` · <b>UB ${wochentag(p.ub)} ${datumKurz(p.ub)}</b>` : ""}${dozMarken(p)}`;
   };
-  if ((S.f.studAnsicht || "kacheln") === "kacheln") return vVerlaeufe();
+  return vVerlaeufe();   // nur noch der Verlauf (Rike: die Kurzliste braucht es nicht)
   return `<h2>Studierende</h2>${ansichtUmschalter()}
   ${filterBox(false, liste.length)}
   <table class="studliste"><thead><tr><th>Name</th><th>Beginn</th><th>Bausteine</th><th>Als Nächstes</th></tr></thead><tbody>
@@ -1024,7 +1037,7 @@ function vZuteilung() {
   <details><summary><h3 style="display:inline">Schon zugeteilt in ${sem} (${pr.filter((p) => !offen.includes(p)).length})</h3></summary>
   <table><thead><tr><th>Studierende</th><th>Art</th><th>Doz</th><th>PxL</th><th>UB</th><th>Stand</th></tr></thead><tbody>
   ${pr.filter((p) => !offen.includes(p)).sort((a, b) => ARTEN.findIndex((x) => x.k === a.art) - ARTEN.findIndex((x) => x.k === b.art)).map((p) => `<tr class="klickbar" onclick="praktikumDialog('${p.id}')"><td>${esc(nameVon(D.studis[p.student]))}</td><td>${p.art}</td><td>${dozMarken(p)}</td><td>${esc(D.pxl[p.pxl] ? pxlKurz(D.pxl[p.pxl]) + " · " + schuleKurz(D.pxl[p.pxl]) : p.thema || p.pxlText || "")}</td><td>${ubText(p)}</td><td><span class="punkt st-${statusInfo(p)[2]}"></span>${esc(statusInfo(p)[1])} ${avbLink(p)}</td></tr>`).join("")}</tbody></table></details>
-  ${ohneSem.length ? `<details><summary><h3 style="display:inline">Noch ohne Semester (${ohneSem.length})</h3></summary><table><thead><tr><th>Studierende</th><th>Art</th><th>Umfang</th><th>Semester festlegen</th></tr></thead><tbody>${ohneSem.map((p) => `<tr><td>${esc(nameVon(D.studis[p.student]))}</td><td><span class="link" onclick="praktikumDialog('${p.id}')">${p.art}</span></td><td class="klein">${esc(umfangKurz(p))}</td><td><select ${darf ? "" : "disabled"} onchange="semSetzen('${p.id}', this.value)"><option value="">–</option>${sems.map((x) => `<option>${x}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></details>` : ""}
+  ${ohneSem.length ? `<details><summary><h3 style="display:inline">Noch ohne Semester (${ohneSem.length})</h3></summary><table><thead><tr><th>Studierende</th><th>Art</th><th>Umfang</th><th>Semester festlegen</th></tr></thead><tbody>${ohneSem.map((p) => `<tr><td>${esc(nameVon(D.studis[p.student]))}</td><td><span class="link" onclick="praktikumDialog('${p.id}')">${p.art}</span></td><td class="klein">${esc(umfangKurz(p))}</td><td>${semFeld("ss_" + p.id, "", `${darf ? "" : "disabled"} onchange="semSetzen('${p.id}', this.value)"`)}</td></tr>`).join("")}</tbody></table></details>` : ""}
   ${eingangHtml()}`;
 }
 /* Pensum: wie viele Begleitungen je Doz im Semester geplant sind (einst «pensum.<Semester>-<Kürzel>») */
@@ -1053,7 +1066,7 @@ async function pensumSetzen(sem, k, art, wert) {
 }
 async function dozSetzen(id, k, an) { const p = D.praktika[id], doz = new Set(p.doz || []); an ? doz.add(k) : doz.delete(k); await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { doz: (D.einst.team || []).map((t) => t.kuerzel).filter((x) => doz.has(x)) } }); }
 async function pxlSetzen(id, xid) { const p = D.praktika[id], f = { pxl: xid || null }; if (xid && ["offen", "pxl_suchen"].includes(p.status)) f.status = "angefragt"; if (!xid && p.status === "angefragt") f.status = "pxl_suchen"; await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f }); }
-async function semSetzen(id, sem) { if (sem) await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { semester: sem } }); }
+async function semSetzen(id, t) { const sem = semNorm(t); if (sem === null) return meldung("Semester bitte als HS26 oder FS27 eintippen."); if (sem) await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: { semester: sem } }); }
 function mailAnfrage(p) {
   const s = D.studis[p.student], x = D.pxl[p.pxl], ich = (D.einst.team || []).find((t) => t.kuerzel === S.ich);
   const betreff = `Anfrage ${ART[p.art].name} ${p.semester} – Mathematik Sek II PH Luzern`;
@@ -1542,8 +1555,8 @@ function praktikumDialog(id, vorlage) {
   const inhalt = `
     <div class="klein" style="margin-bottom:8px"><span class="link" onclick="$('#dlg').close(); personZeigen('${s.id}')">${esc(nameVon(s))}</span> <span class="leise">${esc(s.profil || "")}${s.wohnort ? " · wohnt " + esc(s.wohnort) : ""}</span></div>
     <div class="kopfzeile">
-      <label>Semester ${sel("f_semester", p.semester || "", [["", "offen"], ...sems.map((x) => [x, x])])}</label>
-      ${p.art === "DP" ? `<label>Prüfung ${dozMarken(p)} <span class="mini">wir prüfen immer beide</span></label>` : `<label>Doz ${dozPillen("f_doz", p.doz)}</label>`}
+      <label>Semester ${semFeld("f_semester", p.semester)}</label>
+      ${p.art === "DP" ? "" : `<label>Doz ${dozPillen("f_doz", p.doz)}</label>`}
       ${p.art === "DP" ? "" : `<label title="Wer an Stelle der zugeteilten Person besucht hat – wird zusätzlich abgerechnet">Vertretung ${dozPillen("f_vertretung", p.vertretung)}</label>`}
       <label>Stand ${sel("f_status", p.status, statusListe(p.art).map(([k, t]) => [k, t]))}</label>
     </div>
@@ -1595,12 +1608,13 @@ function pxlInfoFeld(xid) {
 }
 async function praktikumSpeichern(id, sid) {
   const v = (k) => { const el = $("#f_" + k); return el ? el.value.trim() : undefined; };
-  const art = v("art"), neu = { art, hinweis: v("hinweis") ?? "", semester: v("semester"), doz: art === "DP" ? (D.einst.team || []).map((t) => t.kuerzel) : gewaehlteDoz("f_doz"), vertretung: art === "DP" ? [] : gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
+  const art = v("art"), neu = { art, hinweis: v("hinweis") ?? "", semester: semNorm(v("semester")), doz: art === "DP" ? (D.einst.team || []).map((t) => t.kuerzel) : gewaehlteDoz("f_doz"), vertretung: art === "DP" ? [] : gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
   if (ART[art].praktikum) Object.assign(neu, { umfang: v("umfang") ?? "", wunsch: v("wunsch") ?? "", pxl: v("pxl") ?? "", ub: v("ub") ?? "", ubZeit: v("ubZeit") ?? "", ubBis: v("ubBis") ?? "", ubOrt: v("ubOrt") ?? "", vbDatum: v("vbDatum") ?? "", vbZeit: v("vbZeit") ?? "", vbOrt: v("vbOrt") ?? "", avb: !!($("#f_avb") || {}).checked, aeb: !!($("#f_aeb") || {}).checked });
   if (art === "BP" && $("#f_bms") && $("#f_bms").checked && D.studis[sid] && D.studis[sid].wahl !== "BPAED") await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { wahl: "BPAED", wpb: true } });
   if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", bmsPxl: v("bmsPxl") ?? "", bmsUmfang: v("bmsUmfang") ?? "", verkuerzt: $("#f_verkuerzt").checked });
   else if (art === "DP") Object.assign(neu, { datum: v("datum") ?? "", nachpruefung: !!($("#f_nachpruefung") || {}).checked });
   else Object.assign(neu, { thema: v("thema") ?? "", abgabe: abgabeText(v("abgabe") ?? ""), ...(art === "IVA" && $("#f_ects") ? { ects: Number(v("ects")) } : {}) });
+  if (neu.semester === null) return meldung("Semester bitte als HS26 oder FS27 eintippen (oder leer lassen).");
   if (!statusListe(art).some((s) => s[0] === neu.status)) neu.status = "offen";
   // E-Mail/Telefon der PxL hier ergänzt → bei der PxL speichern
   const xm = v("pxlMail"), xt = v("pxlTel");
@@ -1678,7 +1692,7 @@ async function bemerkungSpeichern(id, art = "studi", feldId = "neueBemerkung") {
 /* Studierende */
 function studiDialog(id) {
   const s = id ? D.studis[id] : { name: "", vorname: "", start: semHeute(), stand: "aktiv", profil: "Monofach" };
-  const inhalt = `<div class="form">${feld("s_name", "Name", s.name)}${feld("s_vorname", "Vorname", s.vorname)}${feld("s_start", "Beginn", s.start, "text", 'placeholder="HS26"')}
+  const inhalt = `<div class="form">${feld("s_name", "Name", s.name)}${feld("s_vorname", "Vorname", s.vorname)}<label for="s_start">Beginn</label>${semFeld("s_start", s.start)}
     ${auswahl("s_profil", "Profil", s.profil || "", [["", "?"], ...PROFILE.map((p) => [p, p])])}
     ${s.profilText ? `<label></label><span class="klein leise">Excel: ${esc(s.profilText)}</span>` : ""}
     ${auswahl("s_wahl", "Wahlpflichtbereich", wahlVon(s), WAHL)}
@@ -1691,7 +1705,7 @@ function studiDialog(id) {
 }
 async function studiSpeichern(id) {
   const v = (k) => $("#s_" + k).value.trim();
-  const neu = { name: v("name"), vorname: v("vorname"), start: v("start").replace(/\s/g, "").toUpperCase(), profil: v("profil"), wahl: v("wahl"), wpb: v("wahl") === "BPAED", faecher: v("faecher"), pensum: v("pensum"), wohnort: v("wohnort"), mail: v("mail"), abschluss: v("abschluss"), stand: v("stand"), bemerkung: v("bemerkung") };
+  const neu = { name: v("name"), vorname: v("vorname"), start: semNorm(v("start")) || v("start").replace(/\s/g, "").toUpperCase(), profil: v("profil"), wahl: v("wahl"), wpb: v("wahl") === "BPAED", faecher: v("faecher"), pensum: v("pensum"), wohnort: v("wohnort"), mail: v("mail"), abschluss: v("abschluss"), stand: v("stand"), bemerkung: v("bemerkung") };
   if (!neu.name) return meldung("Bitte einen Namen eintragen.");
   if (id) { const f = unterschiede(D.studis[id], neu); if (Object.keys(f).length && !(await eintragen({ typ: "aendern", art: "studi", ref: id, felder: f }))) return; $("#dlg").close(); }
   else {
