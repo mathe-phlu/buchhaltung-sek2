@@ -82,11 +82,12 @@ select.beginn { font-size: 12px; padding: 0 2px; border-color: #ddd; }
 .st-rot { background: var(--rot); border-left-color: var(--rot-rand); }
 .st-gelb { background: var(--gelb); border-left-color: var(--gelb-rand); }
 .st-gruen { background: var(--gruen); border-left-color: var(--gruen-rand); }
+.st-anger { background: #eef0f7; border-left-color: #8a93b8; }
 .st-na { background: repeating-linear-gradient(135deg, #f6f6f6 0 6px, #efefef 6px 12px); color: #aaa; border-left-color: #ddd; cursor: default; text-align: center; }
 .plus { color: #9a8a6a; border: 1px dashed #d8ccb0; border-radius: 6px; text-align: center; padding: 3px; font-size: 12px; cursor: pointer; }
 .plus:hover { background: var(--sand); }
 .punkt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; border: 1px solid #999; vertical-align: -1px; margin-right: 4px; }
-.punkt.st-rot { background: var(--rot-rand); border-color: var(--rot-rand); } .punkt.st-gelb { background: var(--gelb-rand); border-color: var(--gelb-rand); } .punkt.st-gruen { background: var(--gruen-rand); border-color: var(--gruen-rand); }
+.punkt.st-rot { background: var(--rot-rand); border-color: var(--rot-rand); } .punkt.st-gelb { background: var(--gelb-rand); border-color: var(--gelb-rand); } .punkt.st-gruen { background: var(--gruen-rand); border-color: var(--gruen-rand); } .punkt.st-anger { background: #8a93b8; border-color: #8a93b8; }
 .legende { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--leise); }
 .karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
 .karte { background: #fff; border: 1px solid var(--linie); border-radius: 10px; padding: 10px 14px; }
@@ -155,7 +156,7 @@ label.ohne { color: inherit !important; font-size: 13px; white-space: nowrap; }
 details.weiteres { border-top: 1px solid var(--linie); padding-top: 6px; margin-top: 4px; }
 .ablage.klein-ablage { display: inline-block; margin: 0 0 0 10px; padding: 2px 10px; border-width: 1px; }
 .pille { display: inline-block; min-width: 30px; text-align: center; font-size: 11.5px; padding: 1px 5px; margin: 1px 2px 1px 0; border-radius: 5px; border: 1px solid #ccc; }
-.pille.st-weiss { background: #fff; } .pille.st-rot { background: var(--rot); border-color: var(--rot-rand); } .pille.st-gelb { background: var(--gelb); border-color: var(--gelb-rand); } .pille.st-gruen { background: var(--gruen); border-color: var(--gruen-rand); }
+.pille.st-weiss { background: #fff; } .pille.st-rot { background: var(--rot); border-color: var(--rot-rand); } .pille.st-gelb { background: var(--gelb); border-color: var(--gelb-rand); } .pille.st-gruen { background: var(--gruen); border-color: var(--gruen-rand); } .pille.st-anger { background: #eef0f7; border-color: #8a93b8; color: #555c80; }
 .pille.bms::after { content: "+"; font-weight: 700; } .pille.leer { border-style: dashed; color: #aaa; } .pille.weg { border-color: transparent; }
 .studliste td { padding: 6px 9px; vertical-align: middle; }
 .karte.termine { grid-column: 1 / -1; } .karte.termine table { width: 100%; } .karte.termine td { border: 0; border-top: 1px solid var(--linie); }
@@ -224,12 +225,14 @@ const STATUS_P = [
   ["avb", "AVB liegt vor · UB vereinbaren", "gelb"],
   ["ub_geplant", "UB vereinbart", "gelb"],
   ["abgeschlossen", "abgeschlossen", "gruen"],
+  ["angerechnet", "angerechnet (Vorleistung)", "anger"],
 ];
 const STATUS_A = [
   ["offen", "noch offen", "weiss"],
   ["laeuft", "Thema steht · in Arbeit", "gelb"],
   ["abgegeben", "abgegeben · Begutachtung", "gelb"],
   ["abgeschlossen", "abgeschlossen", "gruen"],
+  ["angerechnet", "angerechnet (Vorleistung)", "anger"],
 ];
 /* Diplomprüfung Fachdidaktik: Herbst (Sept/Jan, HS) oder Sommer (Juni/Juli, FS); eine Nachprüfung ist ein eigener Eintrag */
 const STATUS_DP = [
@@ -237,7 +240,10 @@ const STATUS_DP = [
   ["geplant", "Termin steht", "gelb"],
   ["nachpruefung", "nicht bestanden · Nachprüfung", "rot"],
   ["abgeschlossen", "bestanden", "gruen"],
+  ["angerechnet", "angerechnet (Vorleistung)", "anger"],
 ];
+/* erledigt = abgeschlossen oder angerechnet (Vorleistung, z.B. Unterrichtserfahrung) – angerechnet zählt nicht in der Abrechnung */
+const erledigt = (p) => p.status === "abgeschlossen" || p.status === "angerechnet";
 const statusListe = (art) => (art === "DP" ? STATUS_DP : ART[art] && !ART[art].praktikum ? STATUS_A : STATUS_P);
 const dpTermin = (p) => (/^HS/.test(p.semester || "") ? "Herbst" : /^FS/.test(p.semester || "") ? "Sommer" : "");
 const statusInfo = (p) => statusListe(p.art).find((s) => s[0] === p.status) || statusListe(p.art)[0];
@@ -431,7 +437,7 @@ function istArchiv(s) { return s.archiv === true || (s.archiv !== false && ["abg
 /* alle Bausteine des Profils sind da und abgeschlossen */
 function alleFertig(s) {
   const pl = praktikaVon(s.id); if (!pl.length) return false;
-  return pl.every((p) => p.status === "abgeschlossen") && ARTEN.filter((a) => a.k !== "DP" && anwendbar(s, a.k)).every((a) => pl.some((p) => p.art === a.k));
+  return pl.every(erledigt) && ARTEN.filter((a) => a.k !== "DP" && anwendbar(s, a.k)).every((a) => pl.some((p) => p.art === a.k));
 }
 async function archivieren(id, an) {
   const s = D.studis[id], f = { archiv: an };
@@ -664,8 +670,8 @@ function lektionenListe(p, knopf = true) {
 async function besuchWaehlen(id, i) {
   const p = D.praktika[id], l = p.lektionen[i];
   const f = { ub: l.datum, ubZeit: l.von || null, ubBis: l.bis || null, ubOrt: [l.klasse && "Kl. " + l.klasse, l.raum && "Zi. " + l.raum].filter(Boolean).join(", ") || null };
-  if (p.status !== "abgeschlossen") f.status = "ub_geplant";
-  if (p.status !== "abgeschlossen" && !p.avb) f.avb = true;
+  if (!erledigt(p)) f.status = "ub_geplant";
+  if (!erledigt(p) && !p.avb) f.avb = true;
   if (!(await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f }))) return;
   besuchMitteilen(id);
 }
@@ -715,7 +721,7 @@ function vLektionen() {
   }
   const montag = (iso) => { const d = new Date(iso + "T12:00:00"), w = (d.getDay() + 6) % 7; d.setDate(d.getDate() - w); return d.toISOString().slice(0, 10); };
   const wochen = {}; for (const e of alle) (wochen[montag(e.l.datum)] ||= []).push(e);
-  const ohne = Object.values(D.praktika).filter((p) => p.semester === sem && ART[p.art].praktikum && D.studis[p.student] && !istArchiv(D.studis[p.student]) && !(p.lektionen || []).length && p.status !== "abgeschlossen" && (!S.f.nurMeine || !S.ich || istMeins(p)));
+  const ohne = Object.values(D.praktika).filter((p) => p.semester === sem && ART[p.art].praktikum && D.studis[p.student] && !istArchiv(D.studis[p.student]) && !(p.lektionen || []).length && !erledigt(p) && (!S.f.nurMeine || !S.ich || istMeins(p)));
   const eintrag = ({ p, l, i, s }) => { const b = i < 0 || istBesuch(p, l), x = D.pxl[p.pxl];
     return `<div class="lek ${b ? "ub" : ""} ${l.art === "H" ? "hosp" : ""}" style="${l.datum < heute ? "opacity:.5" : ""}" title="${esc([nameVon(s), ART[p.art].name, x && pxlKurz(x) + " · " + schuleKurz(x), l.klasse && "Kl. " + l.klasse, l.raum && "Zi. " + l.raum, b ? "Besuch" : i >= 0 && l.art !== "H" ? "Klick: als Besuch wählen" : ""].filter(Boolean).join("\n"))}"
       onclick="${b ? `praktikumDialog('${p.id}')` : i >= 0 && l.art !== "H" ? `if (confirm('Diese Lektion als Besuch wählen?')) besuchWaehlen('${p.id}', ${i})` : `praktikumDialog('${p.id}')`}">
@@ -781,20 +787,20 @@ function vStart() {
   // Termine: Unterrichtsbesuche, Prüfungslektionen, Vorbesprechungen, Diplomprüfungen
   const termine = [];
   for (const p of sicht) {
-    if (p.ub && p.ub >= heute && p.status !== "abgeschlossen") termine.push({ p, d: p.ub, z: p.ubZeit || "", bis: p.ubBis || "", was: p.art === "PP" ? "Prüfungslektion" : "Unterrichtsbesuch " + p.art, ort: p.ubOrt });
+    if (p.ub && p.ub >= heute && !erledigt(p)) termine.push({ p, d: p.ub, z: p.ubZeit || "", bis: p.ubBis || "", was: p.art === "PP" ? "Prüfungslektion" : "Unterrichtsbesuch " + p.art, ort: p.ubOrt });
     if (p.vbDatum && p.vbDatum >= heute) termine.push({ p, d: p.vbDatum, z: p.vbZeit || "", was: "Vorbesprechung " + p.art, ort: p.vbOrt });
     if (p.art === "DP" && p.datum && p.datum >= heute) termine.push({ p, d: p.datum, z: "", was: "Diplomprüfung" + (p.nachpruefung ? " (Nachprüfung)" : "") });
   }
   termine.sort((a, b) => (a.d + a.z).localeCompare(b.d + b.z));
   const aufgaben = [
-    ["vorbei", "Besuch vorbei – abschliessen?", sicht.filter((p) => p.ub && p.ub < heute && ART[p.art].praktikum && p.status !== "abgeschlossen"), (p) => zeile(p, ` · UB ${ubText(p)} <button class="klein" onclick="schnell('${p.id}','abgeschlossen')">✓ abgeschlossen</button>`)],
+    ["vorbei", "Besuch vorbei – abschliessen?", sicht.filter((p) => p.ub && p.ub < heute && ART[p.art].praktikum && !erledigt(p)), (p) => zeile(p, ` · UB ${ubText(p)} <button class="klein" onclick="schnell('${p.id}','abgeschlossen')">✓ abgeschlossen</button>`)],
     ["suchen", "PxL finden", sicht.filter((p) => ART[p.art].praktikum && ["offen", "pxl_suchen"].includes(p.status) && p.semester && semKey(p.semester) <= semKey(sem) + 1), (p) => zeile(p, p.wunsch ? ` · <span class="leise">Wunsch: ${esc(p.wunsch)}</span>` : "")],
     ["angefragt", "Angefragt", sicht.filter((p) => p.status === "angefragt"), (p) => zeile(p, pxlInfo(p))],
     ["avb", "AVB ausstehend", sicht.filter((p) => p.status === "zusage"), (p) => zeile(p, pxlInfo(p) + ` <button class="klein" onclick="avbWaehlen('${p.id}')">↑ AVB hochladen</button>`)],
     ["vb", "Vorbesprechung vereinbaren", sicht.filter((p) => ART[p.art].praktikum && ["zusage", "avb"].includes(p.status) && !p.vbDatum && !p.ub), (p) => zeile(p, pxlInfo(p))],
     ["ub", "UB vereinbaren", sicht.filter((p) => p.status === "avb" && !p.ub), (p) => zeile(p, pxlInfo(p) + (p.avbDatei ? " · " + avbLink(p) : ""))],
     ["arbeiten", "Arbeiten in Arbeit", sicht.filter((p) => ["PA", "IVA"].includes(p.art) && ["laeuft", "abgegeben"].includes(p.status)), (p) => zeile(p, `${p.thema ? " · " + esc(p.thema) : ""}${p.abgabe ? ` · <span class="leise">Abgabe ${esc(p.abgabe)}</span>` : ""}`)],
-    ["ohnesem", "Noch ohne Semester", alle.filter((p) => !p.semester && p.status !== "abgeschlossen" && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, umfangKurz(p) ? ` · <span class="leise">${esc(umfangKurz(p))}</span>` : "")],
+    ["ohnesem", "Noch ohne Semester", alle.filter((p) => !p.semester && !erledigt(p) && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, umfangKurz(p) ? ` · <span class="leise">${esc(umfangKurz(p))}</span>` : "")],
     ["archiv", "Fertig – ins Archiv?", Object.values(D.studis).filter((s) => !istArchiv(s) && alleFertig(s)), (s) => `<li><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span> <button class="klein" onclick="archivieren('${s.id}', true)">ins Archiv</button></li>`],
   ];
   const offen = aufgaben.find((x) => x[0] === S.f.startOffen && x[2].length);
@@ -827,7 +833,7 @@ function studisGefiltert() {
   }).sort((a, b) => semKey(a.start) - semKey(b.start) || a.name.localeCompare(b.name));
 }
 function kachel(p) {
-  const si = statusInfo(p), x = D.pxl[p.pxl], fertig = p.status === "abgeschlossen";
+  const si = statusInfo(p), x = D.pxl[p.pxl], fertig = erledigt(p);
   const ab = (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)));
   const z = (inhalt, cls = "", titel = "") => `<div class="kz ${cls}" ${titel ? `title="${esc(titel)}"` : ""}>${inhalt}</div>`;
   const kopf = z(`<span>${dozMarken(p)} ${esc(p.semester || "Sem. ?")}${ART[p.art].praktikum && umfangKurz(p) ? ` · ${umfangKurz(p)}` : ""}${p.aeb ? " · aeB" : ""}</span><span>${p.avbDatei ? "📄" : ""}${fertig ? "✓" : ""}</span>`, "k1", [si[1], p.umfang && "Umfang: " + p.umfang, p.umfangNotiz].filter(Boolean).join("\n"));
@@ -839,6 +845,7 @@ function kachel(p) {
     // klar abgetrennt: Besuch
     let besuch;
     if (p.ub) besuch = `${p.art === "PP" ? "Prüfung" : "UB"} ${wochentag(p.ub)} ${datumKurz(p.ub)}${p.ubZeit ? ", " + esc(p.ubZeit) : ""}`;
+    else if (p.status === "angerechnet") besuch = `<span class="leise">angerechnet · Vorleistung</span>`;
     else if (fertig) besuch = `<span class="leise">${p.aeb ? "Besuch eigene Klasse" : "UB –"}</span>`;
     else if (["offen", "pxl_suchen"].includes(p.status) && !p.semester) besuch = `<span class="leise">noch nicht geplant</span>`;
     else besuch = `<span class="warn">⚠ UB vereinbaren</span>`;
@@ -847,7 +854,7 @@ function kachel(p) {
     if (p.art === "DP") zeilen.push(z(p.datum ? `${wochentag(p.datum)} ${datumKurz(p.datum)} · ${dpTermin(p)}${p.nachpruefung ? " · Nachprüfung" : ""}` : `<span class="leise">${esc(si[1])}</span>`));
     else {
       if (p.thema) zeilen.push(z(esc(p.thema), "", p.thema));
-      zeilen.push(z(fertig ? `<span class="leise">abgeschlossen</span>` : p.abgabe ? `Abgabe ${esc(p.abgabe)}` : `<span class="leise">${esc(si[1])}</span>`, "besuch"));
+      zeilen.push(z(fertig ? `<span class="leise">${esc(si[1])}</span>` : p.abgabe ? `Abgabe ${esc(p.abgabe)}` : `<span class="leise">${esc(si[1])}</span>`, "besuch"));
     }
   }
   for (const h of hinweisListe(p)) zeilen.push(z("ⓘ " + esc(h), "hinw", h));
@@ -887,7 +894,7 @@ function filterBox(mitPraktikum, anzahl) {
     <label>Personen${sel("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</label>
     <label>Doz${sel("doz", [["", "alle"], ...team, ["beide", "zu zweit"]])}</label>
     ${mitPraktikum ? `<label>Semester${sel("sem", [["", "alle"], ...semesterListe().map((x) => [x, x])])}</label>
-    <label>Stand${sel("status", [["", "alle"], ["weiss", "zu organisieren"], ["rot", "PxL suchen / angefragt"], ["gelb", "läuft"], ["gruen", "abgeschlossen"]])}</label>` : ""}
+    <label>Stand${sel("status", [["", "alle"], ["weiss", "zu organisieren"], ["rot", "PxL suchen / angefragt"], ["gelb", "läuft"], ["gruen", "abgeschlossen"], ["anger", "angerechnet"]])}</label>` : ""}
     <span class="ffuss"><b>${anzahl}</b> Personen${aktiv.length ? ` · <span class="faktiv">${aktiv.map(esc).join(" · ")}</span> <span class="link klein" onclick="filterZurueck()">zurücksetzen</span>` : ""}</span>
     <button style="margin-left:auto" onclick="studiDialog()">＋ neue Person</button></div>`;
 }
@@ -902,7 +909,7 @@ function vStudierende() {
     return pl.map((p) => { const x = D.pxl[p.pxl]; return `<span class="pille st-${statusInfo(p)[2]}${p.bms ? " bms" : ""}" title="${esc([a.name + (p.semester ? " " + p.semester : ""), statusInfo(p)[1], dozText(p), x && pxlKurz(x), p.ub && "UB " + ubText(p), p.art === "BP" && bpHinweis(p)].filter(Boolean).join(" · "))}">${a.k}</span>`; }).join("");
   }).join("");
   const naechstes = (s) => {
-    const p = praktikaVon(s.id).filter((p) => p.status !== "abgeschlossen").sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999))[0];
+    const p = praktikaVon(s.id).filter((p) => !erledigt(p)).sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999))[0];
     if (!p) return alleFertig(s) && !istArchiv(s) ? `<span class="ok">✓ alles abgeschlossen</span> <button class="klein" onclick="event.stopPropagation(); archivieren('${s.id}', true)">ins Archiv</button>` : "";
     return `${dozMarken(p)} <b>${p.art}</b> ${esc(p.semester || "ohne Semester")} · ${esc(statusInfo(p)[1])}${p.ub ? ` · <b>UB ${wochentag(p.ub)} ${datumKurz(p.ub)}</b>` : ""}${dozMarken(p)}`;
   };
@@ -912,7 +919,7 @@ function vStudierende() {
   <table class="studliste"><thead><tr><th>Name</th><th>Beginn</th><th>Bausteine</th><th>Als Nächstes</th></tr></thead><tbody>
   ${liste.map((s) => `<tr class="klickbar" onclick="personZeigen('${s.id}')"><td><b>${esc(s.name)}</b> ${esc(s.vorname)}${(D.notizen[s.id] || []).length || s.bemerkung ? ` <span class="leise" title="hat Bemerkungen">✎</span>` : ""}${s.stand === "unterbruch" ? ` <span class="mini nein">Unterbruch</span>` : ""}</td><td onclick="event.stopPropagation()">${beginnFeld(s)}</td><td style="white-space:nowrap">${pillen(s)}</td><td class="klein">${naechstes(s)}</td></tr>`).join("")}
   </tbody></table>
-  <p class="leise klein"><span class="pille st-weiss">SP</span> zu organisieren <span class="pille st-rot">SP</span> PxL suchen/angefragt <span class="pille st-gelb">SP</span> läuft <span class="pille st-gruen">SP</span> abgeschlossen <span class="pille leer">SP</span> noch nicht angelegt <span class="pille st-gelb bms">BP</span> mit Synergie BMS</p>`;
+  <p class="leise klein"><span class="pille st-weiss">SP</span> zu organisieren <span class="pille st-rot">SP</span> PxL suchen/angefragt <span class="pille st-gelb">SP</span> läuft <span class="pille st-gruen">SP</span> abgeschlossen <span class="pille st-anger">SP</span> angerechnet <span class="pille leer">SP</span> noch nicht angelegt <span class="pille st-gelb bms">BP</span> mit Synergie BMS</p>`;
 }
 
 /* ---------- Praxislehrpersonen ---------- */
@@ -950,7 +957,7 @@ function vZuteilung() {
   const darf = (D.einst.zuteilung || []).includes(S.ich) || istAdmin();
   const pr = Object.values(D.praktika).filter((p) => p.semester === sem && D.studis[p.student]);
   const offen = pr.filter((p) => ART[p.art].praktikum && ["offen", "pxl_suchen", "angefragt"].includes(p.status));
-  const ohneSem = Object.values(D.praktika).filter((p) => !p.semester && p.status !== "abgeschlossen" && D.studis[p.student] && D.studis[p.student].stand === "aktiv" && !istArchiv(D.studis[p.student]));
+  const ohneSem = Object.values(D.praktika).filter((p) => !p.semester && !erledigt(p) && D.studis[p.student] && D.studis[p.student].stand === "aktiv" && !istArchiv(D.studis[p.student]));
   const belegt = {}; for (const p of pr) if (p.pxl) (belegt[p.pxl] ||= []).push(p);
   const team = D.einst.team || [];
   const last = team.map((t) => { const meine = pr.filter((p) => (p.doz || []).includes(t.kuerzel)); const std = meine.length; return { t, n: meine.length, std, arten: ARTEN.map((a) => [a.k, meine.filter((p) => p.art === a.k).length]).filter((x) => x[1]) }; });
@@ -1001,7 +1008,7 @@ function anteil(p, k) {
 const zahl = (n) => (n ? String(Math.round(n * 10) / 10).replace(".", ",") : "·");
 function pensumVon(sem, k) { return (D.einst.pensum || {})[sem + "-" + k] || {}; }
 function pensumKarte(sem, t, pr, darf) {
-  const plan = pensumVon(sem, t.kuerzel), meine = pr.filter((p) => (p.doz || []).includes(t.kuerzel));
+  const plan = pensumVon(sem, t.kuerzel), meine = pr.filter((p) => (p.doz || []).includes(t.kuerzel) && p.status !== "angerechnet");
   return `<div class="karte"><b>${esc(t.kuerzel)}</b> · ${esc(t.name)}
     <table class="pensum"><tr><th></th>${PENSUM_ARTEN.map((a) => `<th>${a}</th>`).join("")}</tr>
     <tr><td class="leise">geplant</td>${PENSUM_ARTEN.map((a) => `<td>${darf ? `<input type="number" min="0" value="${esc(plan[a] ?? "")}" onchange="pensumSetzen('${sem}','${t.kuerzel}','${a}',this.value)">` : esc(plan[a] ?? "–")}</td>`).join("")}</tr>
@@ -1031,10 +1038,10 @@ function vBuchhaltung() {
   const jahre = [...new Set([...Object.values(D.praktika).map((p) => sjVon(p.semester)).filter(Boolean), sjVon(heute)])].sort().reverse();
   const sj = S.f.buchSj || sjVon(heute), sems = semsVonSj(sj);
   const pr = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student]);
-  const zaehl = (liste, k, kat, nurFertig) => liste.filter((p) => kategorie(p) === kat && (!nurFertig || p.status === "abgeschlossen")).reduce((n, p) => n + anteil(p, k), 0);
+  const zaehl = (liste, k, kat, nurFertig) => liste.filter((p) => kategorie(p) === kat && p.status !== "angerechnet" && (!nurFertig || p.status === "abgeschlossen")).reduce((n, p) => n + anteil(p, k), 0);
   const ohneDoz = pr.filter((p) => !(p.doz || []).length && ["SPBP", "PP", "aeB"].includes(kategorie(p)));
   const plan = (k, art) => sems.reduce((n, sm) => n + (Number(pensumVon(sm, k)[art]) || 0), 0);
-  const effektiv = (l, k, art, nurFertig) => l.filter((p) => p.art === art && !p.aeb && (!nurFertig || p.status === "abgeschlossen")).reduce((n, p) => n + anteil(p, k), 0);
+  const effektiv = (l, k, art, nurFertig) => l.filter((p) => p.art === art && !p.aeb && p.status !== "angerechnet" && (!nurFertig || p.status === "abgeschlossen")).reduce((n, p) => n + anteil(p, k), 0);
   const karte = (t) => {
     const l = pr.filter((p) => beteiligt(p, t.kuerzel)), k = t.kuerzel;
     const zeile = (titel, arten) => { const e = arten.reduce((n, a) => n + effektiv(l, k, a), 0), f = arten.reduce((n, a) => n + effektiv(l, k, a, true), 0), g = arten.reduce((n, a) => n + plan(k, a), 0);
@@ -1094,7 +1101,7 @@ function buchCsv(sj) {
 /* ====================== Meldungen: Abrechnungsformulare (Studienjahr) und Snapshot (Semester) ====================== */
 /* Zählen je Doz und Studienjahr – dieselben Regeln wie in der Buchhaltung */
 function zahlen(k, sj) {
-  const sems = semsVonSj(sj), l = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student] && beteiligt(p, k));
+  const sems = semsVonSj(sj), l = Object.values(D.praktika).filter((p) => sems.includes(p.semester) && D.studis[p.student] && beteiligt(p, k) && p.status !== "angerechnet");
   const n = (f) => l.filter(f).reduce((x, p) => x + anteil(p, k), 0);
   const plan = (art, nurSem) => sems.filter((sm) => !nurSem || sm.startsWith(nurSem)).reduce((x, sm) => x + (Number(pensumVon(sm, k)[art]) || 0), 0);
   return {
@@ -1291,12 +1298,12 @@ function snapshotHtml(sem) {
   const modSpalten = mods.filter(([c]) => aktiv.some((s) => moduleVon(s, sem).has(c)));
   // Altlasten: PA/IVA aus dem Vorsemester, nicht abgeschlossen
   const alt = {};
-  for (const p of Object.values(D.praktika)) if (p.semester === vs && ["PA", "IVA"].includes(p.art) && p.status !== "abgeschlossen" && D.studis[p.student]) {
+  for (const p of Object.values(D.praktika)) if (p.semester === vs && ["PA", "IVA"].includes(p.art) && !erledigt(p) && D.studis[p.student]) {
     const c = p.art === "PA" ? "MA01.05" : Number(p.ects) === 5 ? (vs.startsWith("HS") ? "MA10.01" : "MA10.02") : "MA10.03"; (alt[c] ||= []).push(D.studis[p.student]);
   }
   const praktTab = (art, nr, titel) => {
     const profile = art === "SP" ? ["Monofach", "Erstfach"] : ["Monofach", "Erstfach", "Zweitfach", "Zusatzfach"];
-    const im = (pf, ss) => sort(Object.values(D.praktika).filter((p) => p.art === art && p.semester === ss && D.studis[p.student] && D.studis[p.student].profil === pf && !p.aeb && (ss === sem || p.status !== "abgeschlossen")).map((p) => D.studis[p.student]));
+    const im = (pf, ss) => sort(Object.values(D.praktika).filter((p) => p.art === art && p.semester === ss && D.studis[p.student] && D.studis[p.student].profil === pf && !p.aeb && (ss === sem || !erledigt(p))).map((p) => D.studis[p.student]));
     const ohne = sort(Object.values(D.praktika).filter((p) => p.art === art && p.semester === sem && D.studis[p.student] && !PK[D.studis[p.student].profil]).map((p) => D.studis[p.student]));
     return `<table><tr><th class="art">${titel}</th>${profile.map((pf) => `<th>${pf}<br><span class="code">${anlass(PK[pf] + "." + nr, sem)}</span></th>`).join("")}</tr>
       <tr><td></td>${profile.map((pf) => `<td>${namen(im(pf, sem))}</td>`).join("")}</tr>
@@ -1589,11 +1596,11 @@ function personZeichnen() {
     const x = D.pxl[p.pxl], aktionen = [];
     if (ART[p.art].praktikum) {
       aktionen.push(p.avbDatei ? avbLink(p) + ` <span class="link klein" onclick="avbWaehlen('${p.id}')">neue Fassung</span>` : `<button class="klein" onclick="avbWaehlen('${p.id}')">↑ AVB hochladen</button>`);
-      if (p.ub && p.status !== "abgeschlossen") aktionen.push(`<button class="klein" title="Mail-Entwurf und Outlook-Termin" onclick="besuchMitteilen('${p.id}')">✉ / 📅</button>`);
-      if (x && x.mail && p.status !== "abgeschlossen") aktionen.push(`<a class="link klein" href="mailto:${esc(x.mail.trim())}">✉ PxL</a>`);
+      if (p.ub && !erledigt(p)) aktionen.push(`<button class="klein" title="Mail-Entwurf und Outlook-Termin" onclick="besuchMitteilen('${p.id}')">✉ / 📅</button>`);
+      if (x && x.mail && !erledigt(p)) aktionen.push(`<a class="link klein" href="mailto:${esc(x.mail.trim())}">✉ PxL</a>`);
     }
     aktionen.push(`<button class="klein" onclick="praktikumDialog('${p.id}')">öffnen</button>`);
-    const lek = (p.lektionen || []).length && p.status !== "abgeschlossen" ? `<details ${p.ub ? "" : "open"}><summary class="klein">${p.lektionen.length} Lektionen aus der AVB${p.ub ? "" : " – eine als Besuch wählen"}</summary>${lektionenListe(p)}</details>` : "";
+    const lek = (p.lektionen || []).length && !erledigt(p) ? `<details ${p.ub ? "" : "open"}><summary class="klein">${p.lektionen.length} Lektionen aus der AVB${p.ub ? "" : " – eine als Besuch wählen"}</summary>${lektionenListe(p)}</details>` : "";
     return `<div class="gross"><div class="gtitel">${esc(ART[p.art].name)}${p.zusatz ? " (zusätzlich)" : ""}</div>${kachel(p)}<div class="gakt">${aktionen.join(" ")}</div>${lek}</div>`;
   };
   const fehlt = ARTEN.filter((a) => anwendbar(s, a.k) && !pl.some((p) => p.art === a.k));
