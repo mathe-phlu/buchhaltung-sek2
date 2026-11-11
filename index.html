@@ -461,6 +461,20 @@ async function archivieren(id, an) {
 /* Vertretung: zugeteilt bleibt «doz», wer vertreten (selbst besucht) hat, steht in «vertretung» – beide werden abgerechnet */
 
 /* Umfang einheitlich: «18 h», «18h», «18 L.», «36 L.» → «18 L» (h und L meinen hier Lektionen); Rest bleibt im Tooltip */
+/* Abgabetermin einheitlich: «2.27», «–6.27», «Jan. 27», «- 9.1.2026» → «Feb 2027», «Jun 2027», «Jan 2027», «9. Jan 2026» */
+const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+function abgabeText(t) {
+  let r = String(t || "").replace(/^[\s·*–—-]+|[\s*]+$/g, "").replace(/^(geplant|Abgabe|Abschluss)\s*(\(geplant\))?\s*:?\s*[–-]?\s*/i, "").trim();
+  if (!r) return "";
+  const frage = /\?/.test(r) ? " (?)" : "", jahr = (y) => (y.length === 2 ? "20" + y : y);
+  let m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{2}|\d{4})\b/.exec(r);
+  if (m && m[2] >= 1 && m[2] <= 12) return `${Number(m[1])}. ${MONATE[m[2] - 1]} ${jahr(m[3])}${frage}`;
+  m = /^(\d{1,2})\.\s?(\d{2}|\d{4})\b/.exec(r);
+  if (m && m[1] >= 1 && m[1] <= 12) return `${MONATE[m[1] - 1]} ${jahr(m[2])}${frage}`;
+  m = /^((?:Ende|Anfang|Mitte)\s+)?([A-Za-zäÄ]{3,})\.?\s*(\d{2}|\d{4})\b/.exec(r);
+  if (m) { const i = MONATE.findIndex((x) => m[2].toLowerCase().replace("ä", "a").startsWith(x.toLowerCase().replace("ä", "a").slice(0, 3))); if (i >= 0) return `${m[1] ? m[1].trim() + " " : ""}${MONATE[i]} ${jahr(m[3])}${frage}`; }
+  return r;
+}
 function hinweisListe(p) { return (p.hinweis !== undefined && p.hinweis !== null ? String(p.hinweis).split("\n") : p.hinweise || []).map((x) => x.trim()).filter(Boolean); }
 function umfangZahl(t) { const m = /(\d+(?:[.,]\d+)?)\s*(h|L\b|L\.|Lekt|Lektionen)?/i.exec(String(t || "")); return m ? Number(m[1].replace(",", ".")) : null; }
 function umfangKurz(p) {
@@ -812,7 +826,7 @@ function vStart() {
     ["avb", "AVB ausstehend", sicht.filter((p) => p.status === "zusage"), (p) => zeile(p, pxlInfo(p) + ` <button class="klein" onclick="avbWaehlen('${p.id}')">↑ AVB hochladen</button>`)],
     ["vb", "Vorbesprechung vereinbaren", sicht.filter((p) => ART[p.art].praktikum && ["zusage", "avb"].includes(p.status) && !p.vbDatum && !p.ub), (p) => zeile(p, pxlInfo(p))],
     ["ub", "UB vereinbaren", sicht.filter((p) => p.status === "avb" && !p.ub), (p) => zeile(p, pxlInfo(p) + (p.avbDatei ? " · " + avbLink(p) : ""))],
-    ["arbeiten", "Arbeiten in Arbeit", sicht.filter((p) => ["PA", "IVA"].includes(p.art) && ["laeuft", "abgegeben"].includes(p.status)), (p) => zeile(p, `${p.thema ? " · " + esc(p.thema) : ""}${p.abgabe ? ` · <span class="leise">Abgabe ${esc(p.abgabe)}</span>` : ""}`)],
+    ["arbeiten", "Arbeiten in Arbeit", sicht.filter((p) => ["PA", "IVA"].includes(p.art) && ["laeuft", "abgegeben"].includes(p.status)), (p) => zeile(p, `${p.thema ? " · " + esc(p.thema) : ""}${p.abgabe ? ` · <span class="leise">Abgabe ${esc(abgabeText(p.abgabe))}</span>` : ""}`)],
     ["ohnesem", "Noch ohne Semester", alle.filter((p) => relevant(p) && !p.semester && !erledigt(p) && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, umfangKurz(p) ? ` · <span class="leise">${esc(umfangKurz(p))}</span>` : "")],
     ["archiv", "Fertig – ins Archiv?", Object.values(D.studis).filter((s) => !istArchiv(s) && alleFertig(s)), (s) => `<li><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span> <button class="klein" onclick="archivieren('${s.id}', true)">ins Archiv</button></li>`],
   ];
@@ -869,7 +883,7 @@ function kachel(p) {
     if (p.art === "DP") zeilen.push(z(p.datum ? `${wochentag(p.datum)} ${datumKurz(p.datum)} · ${dpTermin(p)}${p.nachpruefung ? " · Nachprüfung" : ""}` : `<span class="leise">${esc(si[1])}</span>`));
     else {
       if (p.thema) zeilen.push(z(esc(p.thema), "", p.thema));
-      zeilen.push(z(fertig ? `<span class="leise">${esc(si[1])}</span>` : p.abgabe ? `Abgabe ${esc(p.abgabe)}` : `<span class="leise">${esc(si[1])}</span>`, "besuch"));
+      zeilen.push(z(fertig ? `<span class="leise">${esc(si[1])}</span>` : p.abgabe ? `Abgabe ${esc(abgabeText(p.abgabe))}` : `<span class="leise">${esc(si[1])}</span>`, "besuch"));
     }
   }
   for (const h of hinweisListe(p)) zeilen.push(z("ⓘ " + esc(h), "hinw", h));
@@ -1552,7 +1566,7 @@ function praktikumDialog(id, vorlage) {
         <label>Termin</label><span class="klein">${dpTermin(p) ? `<b>${dpTermin(p)}</b> (${dpTermin(p) === "Herbst" ? "September/Januar" : "Juni/Juli"}) – aus dem Semester` : "Semester wählen"}</span>
         <label>Nachprüfung</label><label class="ohne"><input type="checkbox" id="f_nachpruefung" ${p.nachpruefung ? "checked" : ""}> dies ist eine Nachprüfung</label></div>
         ${id && p.status === "nachpruefung" && !Object.values(D.praktika).some((q) => q.student === p.student && q.art === "DP" && q.nachpruefung && q.id !== p.id) ? `<p><button class="klein" onclick="praktikumDialog(null, { student: '${p.student}', art: 'DP', status: 'offen', nachpruefung: true, doz: ${esc(JSON.stringify(p.doz || []))} })">＋ Nachprüfung anlegen</button></p>` : ""}`
-    : `<div class="form">${feld("f_thema", "Thema", p.thema)}${feld("f_abgabe", "Abgabe", p.abgabe, "text", 'placeholder="z.B. 6.27"')}
+    : `<div class="form">${feld("f_thema", "Thema", p.thema)}${feld("f_abgabe", "Abgabe", abgabeText(p.abgabe), "text", 'placeholder="z.B. Jun 2027"')}
         ${p.art === "IVA" ? auswahl("f_ects", "Umfang", String(p.ects || 10), [["10", "10 ECTS (zählt in der Abrechnung doppelt)"], ["5", "5 ECTS"]]) : ""}</div>`}
     <div class="abschnitt"><h4>Hinweise <span class="mini" style="text-transform:none">(erscheinen auf der Kachel, je Zeile einer)</span></h4><textarea id="f_hinweis" rows="2" style="min-height:36px" placeholder="z.B. an eigener Schule">${esc(hinweisListe(p).join("\n"))}</textarea></div>
     <div class="abschnitt"><h4>Notizen</h4><textarea id="f_notiz" rows="2" style="min-height:40px">${esc(p.notiz || "")}</textarea></div>
@@ -1583,7 +1597,7 @@ async function praktikumSpeichern(id, sid) {
   if (art === "BP" && $("#f_bms") && $("#f_bms").checked && D.studis[sid] && D.studis[sid].wahl !== "BPAED") await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { wahl: "BPAED", wpb: true } });
   if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", bmsPxl: v("bmsPxl") ?? "", bmsUmfang: v("bmsUmfang") ?? "", verkuerzt: $("#f_verkuerzt").checked });
   else if (art === "DP") Object.assign(neu, { datum: v("datum") ?? "", nachpruefung: !!($("#f_nachpruefung") || {}).checked });
-  else Object.assign(neu, { thema: v("thema") ?? "", abgabe: v("abgabe") ?? "", ...(art === "IVA" && $("#f_ects") ? { ects: Number(v("ects")) } : {}) });
+  else Object.assign(neu, { thema: v("thema") ?? "", abgabe: abgabeText(v("abgabe") ?? ""), ...(art === "IVA" && $("#f_ects") ? { ects: Number(v("ects")) } : {}) });
   if (!statusListe(art).some((s) => s[0] === neu.status)) neu.status = "offen";
   // E-Mail/Telefon der PxL hier ergänzt → bei der PxL speichern
   const xm = v("pxlMail"), xt = v("pxlTel");
