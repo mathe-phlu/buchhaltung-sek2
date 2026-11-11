@@ -443,7 +443,7 @@ function bmsTeile(p) {
   const bms = umfangZahl(p.bmsUmfang) ?? 18;
   return { gym: s.profil === "Erstfach" ? 0 : Math.max(0, ges - bms) || 18, bms };
 }
-const FARBEN_STD = { alh: "#7b4fa3", wec: "#1d7c88" };
+const FARBEN_STD = { alh: "#7b4fa3", wec: "#2a5db0" };   // lila und blau – nicht zu verwechseln mit rot/gelb/grün des Stands
 const dozFarbe = (k) => ((D.einst.team || []).find((t) => t.kuerzel === k) || {}).farbe || FARBEN_STD[k] || "#777";
 function dozMarken(p) {
   const d = (p.doz || []).map((k) => `<span class="dozm" style="background:${dozFarbe(k)}">${esc(k)}</span>`).join("");
@@ -823,7 +823,7 @@ function kachel(p) {
     if (p.ub) besuch = `${p.art === "PP" ? "PL" : "UB"} ${wochentag(p.ub)} ${datumKurz(p.ub)}${p.ubZeit ? ", " + esc(p.ubZeit) : ""}`;
     else if (fertig) besuch = `<span class="leise">${p.aeb ? "Besuch eigene Klasse" : "UB –"}</span>`;
     else if (["offen", "pxl_suchen"].includes(p.status) && !p.semester) besuch = `<span class="leise">noch nicht geplant</span>`;
-    else besuch = `<span class="warn">⚠ kein UB</span>`;
+    else besuch = `<span class="warn">⚠ UB vereinbaren</span>`;
     zeilen.push(z(besuch + (p.vbDatum && !fertig && (!p.ub || p.vbDatum <= p.ub) ? ` <span class="leise">· VB ${datumKurz(p.vbDatum)}</span>` : ""), "besuch"));
   } else {
     if (p.art === "DP") zeilen.push(z(p.datum ? `${wochentag(p.datum)} ${datumKurz(p.datum)} · ${dpTermin(p)}${p.nachpruefung ? " · Nachprüfung" : ""}` : `<span class="leise">${esc(si[1])}</span>`));
