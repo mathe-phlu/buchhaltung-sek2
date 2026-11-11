@@ -62,7 +62,13 @@ tr.klickbar:hover td { background: #fbf8f1; cursor: pointer; }
 .kachel .k1 { display: flex; justify-content: space-between; gap: 4px; }
 .kachel .besuch { border-top: 1px solid rgba(0,0,0,.12); margin-top: 3px; padding-top: 2px; font-weight: 600; }
 .kachel .warn { color: var(--achtung); }
+.kachel .hinw { font-size: 11.5px; color: #5a4a2a; font-style: italic; }
 .kachel.st-bms { background: #f3f3f8; border-left-color: #9a9ab8; border-style: dashed; cursor: pointer; }
+.filter { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; background: #fff; border: 1px solid var(--linie); border-radius: 8px; padding: 10px 12px; margin: 8px 0 10px; }
+.filter label { display: flex; flex-direction: column; font-size: 12px; color: var(--leise); gap: 2px; }
+.filter input[type=search], .filter select { font-size: 14px; padding: 5px 6px; border: 1px solid #ccc; border-radius: 5px; min-width: 120px; }
+.filter input[type=search] { min-width: 200px; }
+.ffuss { font-size: 13px; padding-bottom: 6px; } .faktiv { color: var(--braun-dunkel); }
 .dozwahl { display: inline-block; border: 1.5px solid var(--f); color: var(--f); background: #fff; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 3px; line-height: 18px; user-select: none; }
 .dozwahl.an { background: var(--f); color: #fff; }
 .dozwahl.f_vertretung.an { background: #fff; color: var(--f); border-style: dashed; box-shadow: inset 0 0 0 1px var(--f); }
@@ -430,6 +436,7 @@ async function archivieren(id, an) {
 /* Vertretung: zugeteilt bleibt «doz», wer vertreten (selbst besucht) hat, steht in «vertretung» – beide werden abgerechnet */
 
 /* Umfang einheitlich: «18 h», «18h», «18 L.», «36 L.» → «18 L» (h und L meinen hier Lektionen); Rest bleibt im Tooltip */
+function hinweisListe(p) { return (p.hinweis !== undefined && p.hinweis !== null ? String(p.hinweis).split("\n") : p.hinweise || []).map((x) => x.trim()).filter(Boolean); }
 function umfangZahl(t) { const m = /(\d+(?:[.,]\d+)?)\s*(h|L\b|L\.|Lekt|Lektionen)?/i.exec(String(t || "")); return m ? Number(m[1].replace(",", ".")) : null; }
 function umfangKurz(p) {
   const s = D.studis[p.student], n = umfangZahl(p.umfang) ?? umfangZahl(sollUmfang(s || {}, p.art));
@@ -725,7 +732,7 @@ function zeichnen() {
   if (S.ansicht === "verlaeufe") S.ansicht = "studierende"; if (S.ansicht === "lektionen") S.ansicht = "start";
   if (S.ansicht === "buchhaltung") S.ansicht = "meldungen";
   if (!darfSehen(S.ansicht)) S.ansicht = "start";
-  if (S.ansicht === "studierende" && S.f.studAnsicht !== "kacheln" && (S.f.sem || S.f.status)) { S.f.sem = ""; S.f.status = ""; }
+  if (S.ansicht === "studierende" && S.f.studAnsicht === "liste" && (S.f.sem || S.f.status)) { S.f.sem = ""; S.f.status = ""; }
   const team = D.einst.team || [];
   $("#ich").innerHTML = `<option value="">– wählen –</option>` + team.map((t) => `<option value="${esc(t.kuerzel)}" ${t.kuerzel === S.ich ? "selected" : ""}>${esc(t.kuerzel)} · ${esc(t.name)}</option>`).join("");
   $("#beispielMarke").innerHTML = S.beispiel ? `<span class="marke warn">Beispieldaten – nichts wird gespeichert</span>` : "";
@@ -816,11 +823,11 @@ function kachel(p) {
   const zeilen = [];
   if (ART[p.art].praktikum) {
     if (x) { zeilen.push(z(esc(pxlKurz(x)), "", x.mail || "")); zeilen.push(z(esc(schuleKurz(x)), "leise")); }
-    else if (p.pxlText) zeilen.push(z(esc(p.pxlText), "leise"));
-    else if (!fertig) zeilen.push(z(esc(si[1]), "leise"));
+    else if (p.pxlText) { zeilen.push(z(esc(p.pxlText), "", "nicht in der PxL-Liste")); if (p.pxlOrt) zeilen.push(z(esc(p.pxlOrt), "leise")); }
+    if (!fertig && !["ub_geplant"].includes(p.status)) zeilen.push(z(esc(si[1]), "leise"));
     // klar abgetrennt: Besuch
     let besuch;
-    if (p.ub) besuch = `${p.art === "PP" ? "PL" : "UB"} ${wochentag(p.ub)} ${datumKurz(p.ub)}${p.ubZeit ? ", " + esc(p.ubZeit) : ""}`;
+    if (p.ub) besuch = `${p.art === "PP" ? "Prüfung" : "UB"} ${wochentag(p.ub)} ${datumKurz(p.ub)}${p.ubZeit ? ", " + esc(p.ubZeit) : ""}`;
     else if (fertig) besuch = `<span class="leise">${p.aeb ? "Besuch eigene Klasse" : "UB –"}</span>`;
     else if (["offen", "pxl_suchen"].includes(p.status) && !p.semester) besuch = `<span class="leise">noch nicht geplant</span>`;
     else besuch = `<span class="warn">⚠ UB vereinbaren</span>`;
@@ -832,7 +839,9 @@ function kachel(p) {
       zeilen.push(z(fertig ? `<span class="leise">abgeschlossen</span>` : p.abgabe ? `Abgabe ${esc(p.abgabe)}` : `<span class="leise">${esc(si[1])}</span>`, "besuch"));
     }
   }
-  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L</span></div><div class="kz leise">${esc(p.bmsText || "selbst organisiert")}</div><div class="kz besuch leise">kein Besuch</div></div>` : "";
+  for (const h of hinweisListe(p)) zeilen.push(z("ⓘ " + esc(h), "hinw", h));
+  const bx = D.pxl[p.bmsPxl];
+  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L · selbst organisiert</span></div>${bx ? `<div class="kz">${esc(pxlKurz(bx))}</div>` : ""}<div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz besuch leise">kein Besuch</div></div>` : "";
   return `<div class="kachel st-${si[2]}" style="${ab ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')">${kopf}${zeilen.join("")}</div>${bmsKachel}`;
 }
 function vVerlaeufe() {
@@ -843,18 +852,10 @@ function vVerlaeufe() {
     return `<td class="zelle">${pl.map(kachel).join("")}${!pl.length ? `<div class="plus" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${a.k}${umfangZahl(sollUmfang(s, a.k)) ? " · " + umfangZahl(sollUmfang(s, a.k)) + " L" : ""}</div>` : ""}</td>`;
   }).join("");
   return `<h2>Studierende</h2>${ansichtUmschalter()}
-  <div class="leiste">
-    <span class="gr">${chips("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</span>
-    <span class="gr">Doz ${chips("doz", [["", "alle"], ...(D.einst.team || []).map((t) => [t.kuerzel, t.kuerzel]), ["beide", "beide"]])}</span>
-    <span class="gr">Semester <select onchange="filter('sem', this.value)"><option value="">alle</option>${sems.map((x) => `<option ${S.f.sem === x ? "selected" : ""}>${x}</option>`).join("")}</select></span>
-    <span class="gr">Stand ${chips("status", [["", "alle"], ["weiss", "<span class='punkt st-weiss'></span>zu organisieren"], ["rot", "<span class='punkt st-rot'></span>PxL"], ["gelb", "<span class='punkt st-gelb'></span>läuft"], ["gruen", "<span class='punkt st-gruen'></span>fertig"]])}</span>
-    <span class="gr"><input id="suche" placeholder="Name, Ort, PxL, Thema" value="${esc(S.f.suche)}" oninput="filterTipp('suche', this.value)"></span>
-    <span class="leise klein">${liste.length} Personen</span>
-  </div>
+  ${filterBox(true, liste.length)}
   <div style="overflow:auto;margin-top:8px"><table class="raster"><thead><tr><th>Name</th>${ARTEN.map((a) => `<th>${a.name}</th>`).join("")}</tr></thead><tbody>
   ${liste.map((s) => `<tr><td style="min-width:150px"><span class="link" onclick="personZeigen('${s.id}')"><b>${esc(s.name)}</b> ${esc(s.vorname)}</span>${(D.notizen[s.id] || []).length || s.bemerkung ? ` <span title="hat Bemerkungen">✎</span>` : ""}<div class="mini">Beginn ${beginnFeld(s)} · ${esc(s.profil || "Profil ?")}${s.stand === "unterbruch" ? ` · <span class="nein">Unterbruch</span>` : ""}</div>${!istArchiv(s) && alleFertig(s) ? `<div class="mini ok">✓ fertig · <span class="link" onclick="archivieren('${s.id}', true)">ins Archiv</span></div>` : ""}</td>${zellen(s)}</tr>`).join("")}
-  </tbody></table></div>
-  <p><button onclick="studiDialog()">＋ neue Person</button></p>`;
+  </tbody></table></div>`;
 }
 
 /* ---------- Studierende ---------- */
@@ -864,7 +865,23 @@ function beginnFeld(s) {
   return `<select class="beginn" onclick="event.stopPropagation()" onchange="beginnSetzen('${s.id}', this.value)"><option value="">?</option>${opts.map((x) => `<option ${x === s.start ? "selected" : ""}>${x}</option>`).join("")}</select>`;
 }
 async function beginnSetzen(id, sem) { await eintragen({ typ: "aendern", art: "studi", ref: id, felder: { start: sem || null } }); }
-const ansichtUmschalter = () => `<div class="umschalter">${[["liste", "☰ Liste"], ["kacheln", "▦ Verlauf wie Excel"]].map(([k, t]) => `<span class="chip ${(S.f.studAnsicht || "liste") === k ? "an" : ""}" onclick="filter('studAnsicht','${k}')">${t}</span>`).join("")}</div>`;
+/* Filter wie in der Praxisbesuche-App: beschriftete Felder in einer Zeile, darunter was aktiv ist */
+function filterBox(mitPraktikum, anzahl) {
+  const sel = (k, opts) => `<select onchange="filter('${k}', this.value)">${opts.map(([v, t]) => `<option value="${v}" ${(S.f[k] || "") === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+  const team = (D.einst.team || []).map((t) => [t.kuerzel, t.kuerzel + (t.name ? " · " + t.name : "")]);
+  const aktiv = [S.f.stand !== "aktiv" && (S.f.stand === "fertig" ? "Archiv" : "alle Personen"), S.f.doz && "Doz " + S.f.doz,
+    mitPraktikum && S.f.sem && "Semester " + S.f.sem, mitPraktikum && S.f.status && "Stand " + { weiss: "zu organisieren", rot: "PxL", gelb: "läuft", gruen: "fertig" }[S.f.status], S.f.suche && "«" + S.f.suche + "»"].filter(Boolean);
+  return `<div class="filter">
+    <label>Suchen<input type="search" id="suche" placeholder="Name, Ort, PxL, Thema" value="${esc(S.f.suche)}" oninput="filterTipp('suche', this.value)"></label>
+    <label>Personen${sel("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</label>
+    <label>Doz${sel("doz", [["", "alle"], ...team, ["beide", "zu zweit"]])}</label>
+    ${mitPraktikum ? `<label>Semester${sel("sem", [["", "alle"], ...semesterListe().map((x) => [x, x])])}</label>
+    <label>Stand${sel("status", [["", "alle"], ["weiss", "zu organisieren"], ["rot", "PxL suchen / angefragt"], ["gelb", "läuft"], ["gruen", "abgeschlossen"]])}</label>` : ""}
+    <span class="ffuss"><b>${anzahl}</b> Personen${aktiv.length ? ` · <span class="faktiv">${aktiv.map(esc).join(" · ")}</span> <span class="link klein" onclick="filterZurueck()">zurücksetzen</span>` : ""}</span>
+    <button style="margin-left:auto" onclick="studiDialog()">＋ neue Person</button></div>`;
+}
+function filterZurueck() { Object.assign(S.f, { stand: "aktiv", doz: "", sem: "", status: "", suche: "" }); merke("filter", JSON.stringify(S.f)); zeichnen(); }
+const ansichtUmschalter = () => `<div class="umschalter">${[["kacheln", "▦ Verlauf wie Excel"], ["liste", "☰ übersichtliche Liste"]].map(([k, t]) => `<span class="chip ${(S.f.studAnsicht || "kacheln") === k ? "an" : ""}" onclick="filter('studAnsicht','${k}')">${t}</span>`).join("")}</div>`;
 function vStudierende() {
   const liste = studisGefiltert();
   // je Baustein ein farbiges Kästchen; Details in der Seitenleiste
@@ -878,12 +895,9 @@ function vStudierende() {
     if (!p) return alleFertig(s) && !istArchiv(s) ? `<span class="ok">✓ alles abgeschlossen</span> <button class="klein" onclick="event.stopPropagation(); archivieren('${s.id}', true)">ins Archiv</button>` : "";
     return `${dozMarken(p)} <b>${p.art}</b> ${esc(p.semester || "ohne Semester")} · ${esc(statusInfo(p)[1])}${p.ub ? ` · <b>UB ${wochentag(p.ub)} ${datumKurz(p.ub)}</b>` : ""}${dozMarken(p)}`;
   };
-  if (S.f.studAnsicht === "kacheln") return vVerlaeufe();
+  if ((S.f.studAnsicht || "kacheln") === "kacheln") return vVerlaeufe();
   return `<h2>Studierende</h2>${ansichtUmschalter()}
-  <div class="leiste"><span class="gr">${chips("stand", [["aktiv", "im Studium"], ["fertig", "Archiv"], ["alle", "alle"]])}</span>
-  <span class="gr">Doz ${chips("doz", [["", "alle"], ...(D.einst.team || []).map((t) => [t.kuerzel, t.kuerzel]), ["beide", "beide"]])}</span>
-  <span class="gr"><input id="suche" placeholder="Name, Ort, PxL, Thema" value="${esc(S.f.suche)}" oninput="filterTipp('suche', this.value)"></span>
-  <button onclick="studiDialog()">＋ neue Person</button><span class="leise klein">${liste.length} Personen · Klick öffnet alles zur Person</span></div>
+  ${filterBox(false, liste.length)}
   <table class="studliste"><thead><tr><th>Name</th><th>Beginn</th><th>Bausteine</th><th>Als Nächstes</th></tr></thead><tbody>
   ${liste.map((s) => `<tr class="klickbar" onclick="personZeigen('${s.id}')"><td><b>${esc(s.name)}</b> ${esc(s.vorname)}${(D.notizen[s.id] || []).length || s.bemerkung ? ` <span class="leise" title="hat Bemerkungen">✎</span>` : ""}${s.stand === "unterbruch" ? ` <span class="mini nein">Unterbruch</span>` : ""}</td><td onclick="event.stopPropagation()">${beginnFeld(s)}</td><td style="white-space:nowrap">${pillen(s)}</td><td class="klein">${naechstes(s)}</td></tr>`).join("")}
   </tbody></table>
@@ -1487,7 +1501,7 @@ function praktikumDialog(id, vorlage) {
     <div class="abschnitt"><h4>Praxislehrperson</h4>
       <div style="display:flex;gap:6px"><select id="f_pxl" style="flex:1;min-width:0" onchange="$('#pxlinfo').innerHTML = pxlInfoFeld(this.value)">${pxlOpts.map(([v, t]) => `<option value="${esc(v)}" ${(p.pxl || "") === v ? "selected" : ""}>${esc(t)}</option>`).join("")}</select><button class="klein" title="PxL ist noch nicht in der Liste" onclick="S.nachPxl = '${id || ""}'; pxlDialog()">＋ neu</button></div>
       <div id="pxlinfo" style="margin-top:3px">${pxlInfoFeld(p.pxl)}</div>
-      ${!p.pxl && p.pxlText ? `<div class="mini">aus Excel: ${esc(p.pxlText)}</div>` : ""}
+      ${!p.pxl && p.pxlText ? `<div class="mini">aus Excel: ${esc(p.pxlText)}${p.pxlOrt ? " · " + esc(p.pxlOrt) : ""} – nicht in der PxL-Liste (＋ neu)</div>` : ""}
       ${p.art === "BP" && bpHinweis(p) ? `<div class="klein" style="margin-top:3px"><b>${esc(bpHinweis(p))}</b></div>` : ""}
       ${x && passtNicht(x, p) ? `<div class="klein nein">⚠ ${esc(passtNicht(x, p))}</div>` : ""}</div>
     <div class="abschnitt"><h4>Ausbildungsvereinbarung</h4>
@@ -1507,12 +1521,13 @@ function praktikumDialog(id, vorlage) {
         ${id && p.status === "nachpruefung" && !Object.values(D.praktika).some((q) => q.student === p.student && q.art === "DP" && q.nachpruefung && q.id !== p.id) ? `<p><button class="klein" onclick="praktikumDialog(null, { student: '${p.student}', art: 'DP', status: 'offen', nachpruefung: true, doz: ${esc(JSON.stringify(p.doz || []))} })">＋ Nachprüfung anlegen</button></p>` : ""}`
     : `<div class="form">${feld("f_thema", "Thema", p.thema)}${feld("f_abgabe", "Abgabe", p.abgabe, "text", 'placeholder="z.B. 6.27"')}
         ${p.art === "IVA" ? auswahl("f_ects", "Umfang", String(p.ects || 10), [["10", "10 ECTS (zählt in der Abrechnung doppelt)"], ["5", "5 ECTS"]]) : ""}</div>`}
+    <div class="abschnitt"><h4>Hinweise <span class="mini" style="text-transform:none">(erscheinen auf der Kachel, je Zeile einer)</span></h4><textarea id="f_hinweis" rows="2" style="min-height:36px" placeholder="z.B. an eigener Schule">${esc(hinweisListe(p).join("\n"))}</textarea></div>
     <div class="abschnitt"><h4>Notizen</h4><textarea id="f_notiz" rows="2" style="min-height:40px">${esc(p.notiz || "")}</textarea></div>
     <details class="weiteres"><summary class="klein leise">Weitere Angaben${p.umfang ? " · " + esc(p.umfang) : ""}${p.wunsch ? " · Wunsch: " + esc(p.wunsch) : ""}</summary><div class="form" style="margin-top:6px">
       ${auswahl("f_art", "Art", p.art, ARTEN.map((a) => [a.k, a.k + " · " + a.name]))}
       ${istP ? `${feld("f_umfang", "Umfang", p.umfang, "text", `placeholder="${esc(sollUmfang(s, p.art))}"`)}${p.umfangNotiz ? `<label></label><span class="mini">aus Excel: ${esc(p.umfangNotiz)}</span>` : ""}${feld("f_wunsch", "Wunsch (Zeit/Ort)", p.wunsch)}
       <label>aeB</label><label class="ohne"><input type="checkbox" id="f_aeb" ${p.aeb ? "checked" : ""}> Besuch in der eigenen Klasse</label>
-      ${p.art === "BP" ? `<label>Synergie BMS</label><div><label class="ohne"><input type="checkbox" id="f_bms" ${p.bms ? "checked" : ""}> Teil des BP an BMS / Berufsfachschule</label> <input id="f_bmsText" value="${esc(p.bmsText || "")}" placeholder="wo (Schule)" size="16"> <input id="f_bmsUmfang" value="${esc(p.bmsUmfang || "")}" placeholder="18 L" size="5"><div class="mini">${esc(synergieRegel(s).text)}${wahlVon(s) !== "BPAED" ? " · setzt Wahlpflicht Berufspädagogik voraus" : ""}</div></div>
+      ${p.art === "BP" ? `<label>Synergie BMS</label><div><label class="ohne"><input type="checkbox" id="f_bms" ${p.bms ? "checked" : ""}> Teil des BP an BMS / Berufsfachschule</label> <select id="f_bmsPxl"><option value="">PxL an der BMS –</option>${Object.values(D.pxl).filter((y) => y.schultyp !== "Gymnasium").sort((a, b) => a.name.localeCompare(b.name)).map((y) => `<option value="${y.id}" ${p.bmsPxl === y.id ? "selected" : ""}>${esc(y.name + " " + y.vorname)} – ${esc(schuleKurz(y))}</option>`).join("")}</select> <input id="f_bmsText" value="${esc(p.bmsText || "")}" placeholder="oder Ort" size="12"> <input id="f_bmsUmfang" value="${esc(p.bmsUmfang || "")}" placeholder="18 L" size="5"><div class="mini">${esc(synergieRegel(s).text)}${wahlVon(s) !== "BPAED" ? " · setzt Wahlpflicht Berufspädagogik voraus" : ""}</div></div>
       <label>Verkürzt</label><label class="ohne"><input type="checkbox" id="f_verkuerzt" ${p.verkuerzt ? "checked" : ""}> wegen Unterrichtserfahrung (bewilligt durch Studiengangsleitung)</label>` : ""}` : ""}</div>
       ${p.excel ? `<details><summary class="klein leise">Text aus der Excel-Liste</summary><div class="excel">${esc(p.exceldoz ? p.exceldoz.replace(/\n/g, " ") + "\n" : "")}${esc(p.excel)}</div>${p.hinweisImport ? `<div class="mini">${esc(p.hinweisImport)}</div>` : ""}</details>` : ""}
       ${id ? verlaufHtml("praktikum", id) : ""}</details>`;
@@ -1530,9 +1545,9 @@ function pxlInfoFeld(xid) {
 }
 async function praktikumSpeichern(id, sid) {
   const v = (k) => { const el = $("#f_" + k); return el ? el.value.trim() : undefined; };
-  const art = v("art"), neu = { art, semester: v("semester"), doz: gewaehlteDoz("f_doz"), vertretung: gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
+  const art = v("art"), neu = { art, hinweis: v("hinweis") ?? "", semester: v("semester"), doz: gewaehlteDoz("f_doz"), vertretung: gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
   if (ART[art].praktikum) Object.assign(neu, { umfang: v("umfang") ?? "", wunsch: v("wunsch") ?? "", pxl: v("pxl") ?? "", ub: v("ub") ?? "", ubZeit: v("ubZeit") ?? "", ubBis: v("ubBis") ?? "", ubOrt: v("ubOrt") ?? "", vbDatum: v("vbDatum") ?? "", vbZeit: v("vbZeit") ?? "", vbOrt: v("vbOrt") ?? "", avb: !!($("#f_avb") || {}).checked, aeb: !!($("#f_aeb") || {}).checked });
-  if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", bmsUmfang: v("bmsUmfang") ?? "", verkuerzt: $("#f_verkuerzt").checked });
+  if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", bmsPxl: v("bmsPxl") ?? "", bmsUmfang: v("bmsUmfang") ?? "", verkuerzt: $("#f_verkuerzt").checked });
   else if (art === "DP") Object.assign(neu, { datum: v("datum") ?? "", nachpruefung: !!($("#f_nachpruefung") || {}).checked });
   else Object.assign(neu, { thema: v("thema") ?? "", abgabe: v("abgabe") ?? "", ...(art === "IVA" && $("#f_ects") ? { ects: Number(v("ects")) } : {}) });
   if (!statusListe(art).some((s) => s[0] === neu.status)) neu.status = "offen";
@@ -1542,6 +1557,7 @@ async function praktikumSpeichern(id, sid) {
     if (xm && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(xm)) return meldung("Die E-Mail-Adresse sieht nicht richtig aus.");
     if (!(await eintragen({ typ: "aendern", art: "pxl", ref: neu.pxl, felder: Object.assign(xm ? { mail: xm } : {}, xt ? { tel: xt } : {}) }))) return;
   }
+  if (id && neu.hinweis === hinweisListe(D.praktika[id]).join("\n")) delete neu.hinweis;
   if (id) { const f = unterschiede(D.praktika[id], neu); if (Object.keys(f).length && !(await eintragen({ typ: "aendern", art: "praktikum", ref: id, felder: f }))) return; }
   else { const f = Object.fromEntries(Object.entries(neu).filter(([, x]) => x !== "" && x !== false && !(Array.isArray(x) && !x.length))); f.student = sid; if (!(await eintragen({ typ: "neu", art: "praktikum", ref: neueId("n"), felder: f }))) return; }
   $("#dlg").close();
