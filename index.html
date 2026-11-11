@@ -409,6 +409,14 @@ const neueId = (v) => v + Date.now().toString(36) + Math.random().toString(36).s
 
 /* Abgeleitet */
 /* Leere Einträge für Bausteine, die sich erübrigen (z.B. IVA bei Berufspädagogik), nicht zeigen – sobald etwas eingetragen ist, schon */
+/* Warum ein Baustein grau ist: Berufspädagogik, Profil (Zweit-/Zusatzfach haben kein SP), aeB … */
+function entfallGrund(s, art) {
+  if (art === "IVA" && wahlVon(s) === "BPAED") return "Berufspädagogik";
+  if (art === "IVA" && wahlVon(s) === "ADD") return "Additum inkl. PA";
+  if (s.profil === "aeB") return "entfällt · aeB";
+  if (art === "SP" && ["Zweitfach", "Zusatzfach"].includes(s.profil)) return "entfällt · " + s.profil;
+  return s.profil ? "entfällt · " + s.profil : "entfällt";
+}
 function relevant(p) { const s = D.studis[p.student]; return !s || anwendbar(s, p.art) || p.semester || p.thema || p.pxl || (p.status !== "offen" && p.status !== "pxl_suchen"); }
 const praktikaVon = (sid) => Object.values(D.praktika).filter((p) => p.student === sid && relevant(p)).sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999));
 /* Wahlpflichtbereich (Übersicht Verläufe): Individuelle Spezialisierung (IVA) oder Berufspädagogik;
@@ -873,7 +881,7 @@ function vVerlaeufe() {
   const liste = studisGefiltert(), sems = semesterListe();
   const zellen = (s) => ARTEN.map((a) => {
     const pl = praktikaVon(s.id).filter((p) => p.art === a.k);
-    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na" title="erübrigt sich">${a.k === "IVA" && wahlVon(s) === "BPAED" ? "Berufspädagogik" : a.k === "PA" && wahlVon(s) === "ADD" ? "–" : "–"}</div></td>`;
+    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na" title="erübrigt sich">${esc(entfallGrund(s, a.k))}</div></td>`;
     return `<td class="zelle">${pl.map(kachel).join("")}${!pl.length ? `<div class="plus" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${a.k}${umfangZahl(sollUmfang(s, a.k)) ? " · " + umfangZahl(sollUmfang(s, a.k)) + " L" : ""}</div>` : ""}</td>`;
   }).join("");
   return `<h2>Studierende</h2>${ansichtUmschalter()}
