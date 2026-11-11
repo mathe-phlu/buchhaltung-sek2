@@ -83,6 +83,7 @@ select.beginn { font-size: 12px; padding: 0 2px; border-color: #ddd; }
 .st-gelb { background: var(--gelb); border-left-color: var(--gelb-rand); }
 .st-gruen { background: var(--gruen); border-left-color: var(--gruen-rand); }
 .st-anger { background: #eef0f7; border-left-color: #8a93b8; }
+.kachel.st-na.anger { cursor: pointer; text-align: left; color: #8a8a8a; }
 .st-na { background: repeating-linear-gradient(135deg, #f6f6f6 0 6px, #efefef 6px 12px); color: #aaa; border-left-color: #ddd; cursor: default; text-align: center; }
 .plus { color: #9a8a6a; border: 1px dashed #d8ccb0; border-radius: 6px; text-align: center; padding: 3px; font-size: 12px; cursor: pointer; }
 .plus:hover { background: var(--sand); }
@@ -156,7 +157,7 @@ label.ohne { color: inherit !important; font-size: 13px; white-space: nowrap; }
 details.weiteres { border-top: 1px solid var(--linie); padding-top: 6px; margin-top: 4px; }
 .ablage.klein-ablage { display: inline-block; margin: 0 0 0 10px; padding: 2px 10px; border-width: 1px; }
 .pille { display: inline-block; min-width: 30px; text-align: center; font-size: 11.5px; padding: 1px 5px; margin: 1px 2px 1px 0; border-radius: 5px; border: 1px solid #ccc; }
-.pille.st-weiss { background: #fff; } .pille.st-rot { background: var(--rot); border-color: var(--rot-rand); } .pille.st-gelb { background: var(--gelb); border-color: var(--gelb-rand); } .pille.st-gruen { background: var(--gruen); border-color: var(--gruen-rand); } .pille.st-anger { background: #eef0f7; border-color: #8a93b8; color: #555c80; }
+.pille.st-weiss { background: #fff; } .pille.st-rot { background: var(--rot); border-color: var(--rot-rand); } .pille.st-gelb { background: var(--gelb); border-color: var(--gelb-rand); } .pille.st-gruen { background: var(--gruen); border-color: var(--gruen-rand); } .pille.st-anger { background: #eee; border-color: #ccc; color: #999; text-decoration: line-through; }
 .pille.bms::after { content: "+"; font-weight: 700; } .pille.leer { border-style: dashed; color: #aaa; } .pille.weg { border-color: transparent; }
 .studliste td { padding: 6px 9px; vertical-align: middle; }
 .karte.termine { grid-column: 1 / -1; } .karte.termine table { width: 100%; } .karte.termine td { border: 0; border-top: 1px solid var(--linie); }
@@ -259,7 +260,7 @@ const EINST_STD = {
   profile: {
     Monofach: { SP: "18 L", BP: "36 L", PP: "18 L", PA: "ja", IVA: "ja", DP: "ja" },
     Erstfach: { SP: "18 L", BP: "18 L", PP: "9 L", IVA: "ja", DP: "ja" },
-    Zweitfach: { BP: "18 L", PP: "9 L", IVA: "ja", DP: "ja" },
+    Zweitfach: { BP: "18 L", PP: "9 L", DP: "ja" },   // IVA nur, wenn ausdrücklich gewählt (meist Berufspädagogik)
     Zusatzfach: { BP: "18 L", PP: "18 L", DP: "ja" },
     aeB: { SP: "Besuch in der eigenen Klasse" },
   },
@@ -407,14 +408,18 @@ async function eintragen(e) {
 const neueId = (v) => v + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
 /* Abgeleitet */
-const praktikaVon = (sid) => Object.values(D.praktika).filter((p) => p.student === sid).sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999));
+/* Leere Einträge für Bausteine, die sich erübrigen (z.B. IVA bei Berufspädagogik), nicht zeigen – sobald etwas eingetragen ist, schon */
+function relevant(p) { const s = D.studis[p.student]; return !s || anwendbar(s, p.art) || p.semester || p.thema || p.pxl || (p.status !== "offen" && p.status !== "pxl_suchen"); }
+const praktikaVon = (sid) => Object.values(D.praktika).filter((p) => p.student === sid && relevant(p)).sort((a, b) => (semKey(a.semester) || 999) - (semKey(b.semester) || 999));
 /* Wahlpflichtbereich (Übersicht Verläufe): Individuelle Spezialisierung (IVA) oder Berufspädagogik;
    Erst- und Zweitfach alternativ Additum inkl. Projektarbeit */
 const WAHL = [["", "noch offen"], ["IVA", "Individuelle Spezialisierung (IVA)"], ["BPAED", "Berufspädagogik"], ["ADD", "Additum inkl. Projektarbeit"]];
-function wahlVon(s) { return s.wahl || (s.wpb ? "BPAED" : ""); }
+/* Synergie BMS heisst immer Wahlpflicht Berufspädagogik (dann ist die IVA nicht unsere Sache) */
+function wahlVon(s) { return s.wahl || (s.wpb || Object.values(D.praktika).some((p) => p.student === s.id && p.art === "BP" && p.bms) ? "BPAED" : ""); }
 function anwendbar(s, art) {
   const pr = D.einst.profile[s.profil], w = wahlVon(s);
-  if (art === "IVA" && (w === "BPAED" || w === "ADD")) return false;
+  if (art === "IVA" && (w === "BPAED" || w === "ADD")) return false;   // Berufspädagogik: erübrigt sich, betrifft uns nicht
+  if (art === "IVA" && w === "IVA" && s.profil !== "aeB") return true;
   if (art === "PA" && w === "ADD") return true;
   return !pr || art in pr;
 }
@@ -428,7 +433,7 @@ function synergieRegel(s) {
 }
 function bpHinweis(p) {
   const s = D.studis[p.student], t = [];
-  if (p.bms) { const r = synergieRegel(s); t.push(`Synergie BMS${p.bmsText ? ": " + p.bmsText : ""}${!r.ok ? " ⚠ " + r.text : wahlVon(s) !== "BPAED" ? " ⚠ Wahlpflicht ist nicht Berufspädagogik" : ""}`); }
+  if (p.bms) { const r = synergieRegel(s); t.push(`Synergie BMS${p.bmsText ? ": " + p.bmsText : ""}${!r.ok ? " ⚠ " + r.text : ""}`); }
   if (p.verkuerzt) t.push("verkürzt (bewilligt)");
   return t.join(" · ");
 }
@@ -800,7 +805,7 @@ function vStart() {
     ["vb", "Vorbesprechung vereinbaren", sicht.filter((p) => ART[p.art].praktikum && ["zusage", "avb"].includes(p.status) && !p.vbDatum && !p.ub), (p) => zeile(p, pxlInfo(p))],
     ["ub", "UB vereinbaren", sicht.filter((p) => p.status === "avb" && !p.ub), (p) => zeile(p, pxlInfo(p) + (p.avbDatei ? " · " + avbLink(p) : ""))],
     ["arbeiten", "Arbeiten in Arbeit", sicht.filter((p) => ["PA", "IVA"].includes(p.art) && ["laeuft", "abgegeben"].includes(p.status)), (p) => zeile(p, `${p.thema ? " · " + esc(p.thema) : ""}${p.abgabe ? ` · <span class="leise">Abgabe ${esc(p.abgabe)}</span>` : ""}`)],
-    ["ohnesem", "Noch ohne Semester", alle.filter((p) => !p.semester && !erledigt(p) && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, umfangKurz(p) ? ` · <span class="leise">${esc(umfangKurz(p))}</span>` : "")],
+    ["ohnesem", "Noch ohne Semester", alle.filter((p) => relevant(p) && !p.semester && !erledigt(p) && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, umfangKurz(p) ? ` · <span class="leise">${esc(umfangKurz(p))}</span>` : "")],
     ["archiv", "Fertig – ins Archiv?", Object.values(D.studis).filter((s) => !istArchiv(s) && alleFertig(s)), (s) => `<li><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span> <button class="klein" onclick="archivieren('${s.id}', true)">ins Archiv</button></li>`],
   ];
   const offen = aufgaben.find((x) => x[0] === S.f.startOffen && x[2].length);
@@ -833,6 +838,8 @@ function studisGefiltert() {
   }).sort((a, b) => semKey(a.start) - semKey(b.start) || a.name.localeCompare(b.name));
 }
 function kachel(p) {
+  // angerechnet (Vorleistung): erübrigt sich – nur ein graues Feld, ohne Doz, Semester, Umfang
+  if (p.status === "angerechnet") return `<div class="kachel st-na anger" onclick="praktikumDialog('${p.id}')" title="angerechnet (Vorleistung) – zum Ändern anklicken"><div class="kz">⊕ angerechnet · Vorleistung</div>${hinweisListe(p).map((h) => `<div class="kz hinw">ⓘ ${esc(h)}</div>`).join("")}</div>`;
   const si = statusInfo(p), x = D.pxl[p.pxl], fertig = erledigt(p);
   const ab = (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)));
   const z = (inhalt, cls = "", titel = "") => `<div class="kz ${cls}" ${titel ? `title="${esc(titel)}"` : ""}>${inhalt}</div>`;
@@ -866,7 +873,7 @@ function vVerlaeufe() {
   const liste = studisGefiltert(), sems = semesterListe();
   const zellen = (s) => ARTEN.map((a) => {
     const pl = praktikaVon(s.id).filter((p) => p.art === a.k);
-    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na">–</div></td>`;
+    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na" title="erübrigt sich">${a.k === "IVA" && wahlVon(s) === "BPAED" ? "Berufspädagogik" : a.k === "PA" && wahlVon(s) === "ADD" ? "–" : "–"}</div></td>`;
     return `<td class="zelle">${pl.map(kachel).join("")}${!pl.length ? `<div class="plus" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${a.k}${umfangZahl(sollUmfang(s, a.k)) ? " · " + umfangZahl(sollUmfang(s, a.k)) + " L" : ""}</div>` : ""}</td>`;
   }).join("");
   return `<h2>Studierende</h2>${ansichtUmschalter()}
@@ -919,7 +926,7 @@ function vStudierende() {
   <table class="studliste"><thead><tr><th>Name</th><th>Beginn</th><th>Bausteine</th><th>Als Nächstes</th></tr></thead><tbody>
   ${liste.map((s) => `<tr class="klickbar" onclick="personZeigen('${s.id}')"><td><b>${esc(s.name)}</b> ${esc(s.vorname)}${(D.notizen[s.id] || []).length || s.bemerkung ? ` <span class="leise" title="hat Bemerkungen">✎</span>` : ""}${s.stand === "unterbruch" ? ` <span class="mini nein">Unterbruch</span>` : ""}</td><td onclick="event.stopPropagation()">${beginnFeld(s)}</td><td style="white-space:nowrap">${pillen(s)}</td><td class="klein">${naechstes(s)}</td></tr>`).join("")}
   </tbody></table>
-  <p class="leise klein"><span class="pille st-weiss">SP</span> zu organisieren <span class="pille st-rot">SP</span> PxL suchen/angefragt <span class="pille st-gelb">SP</span> läuft <span class="pille st-gruen">SP</span> abgeschlossen <span class="pille st-anger">SP</span> angerechnet <span class="pille leer">SP</span> noch nicht angelegt <span class="pille st-gelb bms">BP</span> mit Synergie BMS</p>`;
+  <p class="leise klein"><span class="pille st-weiss">SP</span> zu organisieren <span class="pille st-rot">SP</span> PxL suchen/angefragt <span class="pille st-gelb">SP</span> läuft <span class="pille st-gruen">SP</span> abgeschlossen <span class="pille st-anger">SP</span> angerechnet (erübrigt sich) <span class="pille leer">SP</span> noch nicht angelegt <span class="pille st-gelb bms">BP</span> mit Synergie BMS</p>`;
 }
 
 /* ---------- Praxislehrpersonen ---------- */
@@ -957,7 +964,7 @@ function vZuteilung() {
   const darf = (D.einst.zuteilung || []).includes(S.ich) || istAdmin();
   const pr = Object.values(D.praktika).filter((p) => p.semester === sem && D.studis[p.student]);
   const offen = pr.filter((p) => ART[p.art].praktikum && ["offen", "pxl_suchen", "angefragt"].includes(p.status));
-  const ohneSem = Object.values(D.praktika).filter((p) => !p.semester && !erledigt(p) && D.studis[p.student] && D.studis[p.student].stand === "aktiv" && !istArchiv(D.studis[p.student]));
+  const ohneSem = Object.values(D.praktika).filter((p) => relevant(p) && !p.semester && !erledigt(p) && D.studis[p.student] && D.studis[p.student].stand === "aktiv" && !istArchiv(D.studis[p.student]));
   const belegt = {}; for (const p of pr) if (p.pxl) (belegt[p.pxl] ||= []).push(p);
   const team = D.einst.team || [];
   const last = team.map((t) => { const meine = pr.filter((p) => (p.doz || []).includes(t.kuerzel)); const std = meine.length; return { t, n: meine.length, std, arten: ARTEN.map((a) => [a.k, meine.filter((p) => p.art === a.k).length]).filter((x) => x[1]) }; });
@@ -1471,7 +1478,7 @@ function vEinstellungen() {
   <p class="leise klein">Wer zuteilt, sieht im Reiter Zuteilung die Auswahl und kann Doz und PxL setzen.</p></div>
 
   <div class="karte"><h3>Profile (Umfang laut Ablauf)</h3><div class="form">${PROFILE.map((p) => `<label>${p}</label><input id="pr_${p}" value="${esc(Object.entries(e.profile[p] || {}).map(([k, v]) => k + " " + v).join(", "))}">`).join("")}</div>
-  <p class="leise klein">Was nicht aufgeführt ist, erscheint im Raster grau gestreift. Laut «Übersicht Verläufe» (v2408): Monofach SP 18, BP 36, PP 18, PA, IVA · Erstfach SP 18, BP 18, PP 9, IVA · Zweitfach BP 18, PP 9, IVA · Zusatzfach BP 18, PP 18 · aeB Besuch in der eigenen Klasse. IVA entfällt bei Wahlpflicht Berufspädagogik; Additum inkl. PA statt IVA möglich (Erst-/Zweitfach).</p></div>
+  <p class="leise klein">Was nicht aufgeführt ist, erscheint im Raster grau gestreift. Laut «Übersicht Verläufe» (v2408): Monofach SP 18, BP 36, PP 18, PA, IVA · Erstfach SP 18, BP 18, PP 9, IVA · Zweitfach BP 18, PP 9 (IVA nur auf Wunsch) · Zusatzfach BP 18, PP 18 · aeB Besuch in der eigenen Klasse. IVA entfällt bei Wahlpflicht Berufspädagogik; Additum inkl. PA statt IVA möglich (Erst-/Zweitfach).</p></div>
   <div class="karte"><h3>Daten</h3><p class="klein">${S.beispiel ? "Beispieldaten (nur im Browser)." : `Stammdaten aus Excel eingelesen: ${esc(S.stamm.stand.replace("T", ", "))}<br><span class="leise">${esc(S.stamm.quelle)}</span>`}<br>${S.eintraege.length} Einträge seither.</p>
   <button onclick="ordnerWaehlen()">Anderen Ordner wählen</button> <button onclick="beispielLaden()">Beispiel ansehen</button></div>
   </div><p><button class="haupt" onclick="einstSpeichern()">Einstellungen speichern</button></p>`;
@@ -1545,7 +1552,7 @@ function praktikumDialog(id, vorlage) {
       ${auswahl("f_art", "Art", p.art, ARTEN.map((a) => [a.k, a.k + " · " + a.name]))}
       ${istP ? `${feld("f_umfang", "Umfang", p.umfang, "text", `placeholder="${esc(sollUmfang(s, p.art))}"`)}${p.umfangNotiz ? `<label></label><span class="mini">aus Excel: ${esc(p.umfangNotiz)}</span>` : ""}${feld("f_wunsch", "Wunsch (Zeit/Ort)", p.wunsch)}
       <label>aeB</label><label class="ohne"><input type="checkbox" id="f_aeb" ${p.aeb ? "checked" : ""}> Besuch in der eigenen Klasse</label>
-      ${p.art === "BP" ? `<label>Synergie BMS</label><div><label class="ohne"><input type="checkbox" id="f_bms" ${p.bms ? "checked" : ""}> Teil des BP an BMS / Berufsfachschule</label> <select id="f_bmsPxl"><option value="">PxL an der BMS –</option>${Object.values(D.pxl).filter((y) => y.schultyp !== "Gymnasium").sort((a, b) => a.name.localeCompare(b.name)).map((y) => `<option value="${y.id}" ${p.bmsPxl === y.id ? "selected" : ""}>${esc(y.name + " " + y.vorname)} – ${esc(schuleKurz(y))}</option>`).join("")}</select> <input id="f_bmsText" value="${esc(p.bmsText || "")}" placeholder="oder Ort" size="12"> <input id="f_bmsUmfang" value="${esc(p.bmsUmfang || "")}" placeholder="18 L" size="5"><div class="mini">${esc(synergieRegel(s).text)}${wahlVon(s) !== "BPAED" ? " · setzt Wahlpflicht Berufspädagogik voraus" : ""}</div></div>
+      ${p.art === "BP" ? `<label>Synergie BMS</label><div><label class="ohne"><input type="checkbox" id="f_bms" ${p.bms ? "checked" : ""}> Teil des BP an BMS / Berufsfachschule</label> <select id="f_bmsPxl"><option value="">PxL an der BMS –</option>${Object.values(D.pxl).filter((y) => y.schultyp !== "Gymnasium").sort((a, b) => a.name.localeCompare(b.name)).map((y) => `<option value="${y.id}" ${p.bmsPxl === y.id ? "selected" : ""}>${esc(y.name + " " + y.vorname)} – ${esc(schuleKurz(y))}</option>`).join("")}</select> <input id="f_bmsText" value="${esc(p.bmsText || "")}" placeholder="oder Ort" size="12"> <input id="f_bmsUmfang" value="${esc(p.bmsUmfang || "")}" placeholder="18 L" size="5"><div class="mini">${esc(synergieRegel(s).text)} · damit gilt Wahlpflicht Berufspädagogik (IVA entfällt)</div></div>
       <label>Verkürzt</label><label class="ohne"><input type="checkbox" id="f_verkuerzt" ${p.verkuerzt ? "checked" : ""}> wegen Unterrichtserfahrung (bewilligt durch Studiengangsleitung)</label>` : ""}` : ""}</div>
       ${p.excel ? `<details><summary class="klein leise">Text aus der Excel-Liste</summary><div class="excel">${esc(p.exceldoz ? p.exceldoz.replace(/\n/g, " ") + "\n" : "")}${esc(p.excel)}</div>${p.hinweisImport ? `<div class="mini">${esc(p.hinweisImport)}</div>` : ""}</details>` : ""}
       ${id ? verlaufHtml("praktikum", id) : ""}</details>`;
@@ -1565,6 +1572,7 @@ async function praktikumSpeichern(id, sid) {
   const v = (k) => { const el = $("#f_" + k); return el ? el.value.trim() : undefined; };
   const art = v("art"), neu = { art, hinweis: v("hinweis") ?? "", semester: v("semester"), doz: gewaehlteDoz("f_doz"), vertretung: gewaehlteDoz("f_vertretung"), status: v("status"), notiz: v("notiz") };
   if (ART[art].praktikum) Object.assign(neu, { umfang: v("umfang") ?? "", wunsch: v("wunsch") ?? "", pxl: v("pxl") ?? "", ub: v("ub") ?? "", ubZeit: v("ubZeit") ?? "", ubBis: v("ubBis") ?? "", ubOrt: v("ubOrt") ?? "", vbDatum: v("vbDatum") ?? "", vbZeit: v("vbZeit") ?? "", vbOrt: v("vbOrt") ?? "", avb: !!($("#f_avb") || {}).checked, aeb: !!($("#f_aeb") || {}).checked });
+  if (art === "BP" && $("#f_bms") && $("#f_bms").checked && D.studis[sid] && D.studis[sid].wahl !== "BPAED") await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { wahl: "BPAED", wpb: true } });
   if (art === "BP" && $("#f_bms")) Object.assign(neu, { bms: $("#f_bms").checked, bmsText: v("bmsText") ?? "", bmsPxl: v("bmsPxl") ?? "", bmsUmfang: v("bmsUmfang") ?? "", verkuerzt: $("#f_verkuerzt").checked });
   else if (art === "DP") Object.assign(neu, { datum: v("datum") ?? "", nachpruefung: !!($("#f_nachpruefung") || {}).checked });
   else Object.assign(neu, { thema: v("thema") ?? "", abgabe: v("abgabe") ?? "", ...(art === "IVA" && $("#f_ects") ? { ects: Number(v("ects")) } : {}) });
