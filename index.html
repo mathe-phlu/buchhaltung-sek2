@@ -126,6 +126,12 @@ dialog::backdrop { background: rgba(40,30,10,.35); }
 .baustein { background: #fff; border: 1px solid var(--linie); border-left-width: 5px; border-radius: 8px; padding: 7px 10px; margin: 8px 0; font-size: 13px; }
 .baustein .bk { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .baustein .bk b { font-size: 14px; }
+.verlaufgitter { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gross .gtitel { font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--leise); margin-bottom: 2px; }
+.gross .kachel { font-size: 13.5px; padding: 7px 10px; line-height: 1.45; }
+.gross .kachel .kz { white-space: normal; }
+.gross .gakt { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 3px 0 0; font-size: 12.5px; }
+.apzeile { margin: 8px 0 0; padding: 6px 10px; background: #fff; border: 1px solid var(--linie); border-radius: 8px; }
 .baustein.kompakt { padding: 4px 10px; margin: 4px 0; cursor: pointer; font-size: 12.5px; }
 .baustein.kompakt:hover { box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 .baustein dl { display: grid; grid-template-columns: 70px 1fr; gap: 2px 8px; margin: 5px 0 0; }
@@ -599,6 +605,11 @@ function lektionenAus(zeilen, sem) {
     }
     L.push({ art: modus === "H" ? "H" : "U", datum, von, bis, klasse, anzahl, raum, ...(notiz ? { notiz } : {}) });
   }
+  // aufräumen: «von», «Do.», Jahreszahlen o.ä. sind keine Klassen; «…mmer» ist kein Raum
+  for (const l of L) { if (/^(von|bis|Mo|Di|Mi|Do|Fr|Sa)\.?$|^\d{4}$|^[()\d:\s.]*$|Hospitation/i.test(l.klasse || "")) l.klasse = ""; if (/mmer/.test(l.raum || "")) l.raum = ""; }
+  // neuere Vorlage: das Label «Unterricht» steht oft mitten in der Tabelle – ohne erkannten Unterricht gilt alles als Unterricht
+  const mitZeit = L.filter((l) => l.von);
+  if (mitZeit.length >= 3 && !mitZeit.some((l) => l.art === "U")) for (const l of mitZeit) l.art = "U";
   const gesehen = new Set();
   return L.filter((l) => { const k = [l.art, l.datum, l.von, l.klasse].join("|"); if (gesehen.has(k)) return false; gesehen.add(k); return l.datum; }).sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von));
 }
@@ -1357,7 +1368,7 @@ function vPensen() {
   if (S.pensen === undefined || S.pensen === null) { pensenLaden(); return `<p class="leise">wird geladen …</p>`; }
   if (S.pensen === false) return `<div class="karte" style="max-width:640px"><h3>Pensenplanung – nur für dich</h3>
     <p class="klein">Die Pensenplanung wird nicht im geteilten SwitchDrive-Ordner gespeichert, sondern in einem Ordner, den nur dein Browser kennt –
-    am besten <b>iCloud › Documents › Sek II › Sek II - Leitung › Planung</b>. Dort legt die App die Datei <code>${PRIVAT_DATEI}</code> an.</p>
+    nämlich <b>SwitchDrive › «Buchhaltung Sek II – privat»</b> (nicht freigegeben). Dort liegt <code>${PRIVAT_DATEI}</code> mit den Zahlen aus pensenplanung.xlsx schon bereit – nichts hochladen, nur den Ordner wählen.</p>
     ${S.privatWartet ? `<p><button class="haupt" onclick="privatErlauben()">Zugriff auf «${esc(S.privatWartet.name)}» erlauben</button></p>` : ""}
     <p><button class="${S.privatWartet ? "" : "haupt"}" onclick="privatWaehlen()">Ordner für die Pensenplanung wählen …</button></p></div>`;
   const heute = semHeute(), sj = S.f.buchSj || sjVon(heute), jahre = [...new Set([sjVon(heute), naechstesSj(sjVon(heute)), ...Object.keys(S.pensen.jahre)])].sort().reverse();
@@ -1573,29 +1584,17 @@ function personZeichnen() {
   const stand = (STAND_STUDI.find((x) => x[0] === s.stand) || [, s.stand])[1];
   const eig = [s.mail && "✉ " + s.mail, s.start && "Beginn " + s.start, s.profil, wahlVon(s) && "Wahlpflicht: " + (WAHL.find((w) => w[0] === wahlVon(s)) || [, ""])[1], s.faecher, s.pensum, s.wohnort && "wohnt " + s.wohnort, s.abschluss && "Abschluss geplant " + s.abschluss].filter(Boolean);
   const pl = praktikaVon(s.id);
+  /* Verlauf wie im Raster, nur gross: dieselbe farbige Kachel, darunter was man damit tun kann */
   const baustein = (p) => {
-    const si = statusInfo(p), x = D.pxl[p.pxl], z = [];
+    const x = D.pxl[p.pxl], aktionen = [];
     if (ART[p.art].praktikum) {
-      if (x) z.push(["PxL", `<span class="link" onclick="pxlDialog('${x.id}')">${esc(pxlKurz(x))}</span> · ${esc(schuleKurz(x))}<br>${pxlKontakt(x)}`]);
-      else if (p.pxlText) z.push(["PxL", `<span class="leise">${esc(p.pxlText)} (aus Excel, nicht in der PxL-Liste)</span>`]);
-      if (p.wunsch && !p.pxl) z.push(["Wunsch", esc(p.wunsch)]);
-      if (umfangKurz(p)) z.push(["Umfang", `${esc(umfangKurz(p))}${p.art === "BP" && bpHinweis(p) ? ` <b>${esc(bpHinweis(p))}</b>` : ""}${p.umfangNotiz ? ` <span class="mini">(${esc(p.umfangNotiz)})</span>` : ""}`]);
-      z.push(["AVB", p.avbDatei ? avbLink(p) : (p.avb ? "liegt vor (ohne Datei) " : "<span class='leise'>fehlt</span> ") + `<button class="klein" onclick="avbWaehlen('${p.id}')">↑ hochladen</button>`]);
-      if (p.vbDatum) z.push(["Vorbespr.", `${wochentag(p.vbDatum)} ${datumKurz(p.vbDatum)}${p.vbZeit ? ", " + esc(p.vbZeit) + " Uhr" : ""}${p.vbOrt ? " · " + esc(p.vbOrt) : ""}`]);
-      if (p.ub) z.push([p.art === "PP" ? "Prüfung" : "Besuch", `<b>${wochentag(p.ub)} ${ubText(p)}</b>${p.ubOrt ? " · " + esc(p.ubOrt) : ""} <button class="klein" title="Mail-Entwurf und Outlook-Termin" onclick="besuchMitteilen('${p.id}')">✉ / 📅</button>`]);
-      if ((p.lektionen || []).length) z.push(["Lektionen", `<details ${p.ub ? "" : "open"}><summary class="klein">${p.lektionen.length} aus der AVB${p.ub ? "" : " – eine als Besuch wählen"}</summary>${lektionenListe(p)}</details>`]);
-    } else {
-      if (p.art === "DP") { if (p.datum || dpTermin(p)) z.push(["Prüfung", `${p.datum ? `<b>${wochentag(p.datum)} ${datumKurz(p.datum)}</b> · ` : ""}${dpTermin(p)}${p.nachpruefung ? " · Nachprüfung" : ""}`]); }
-      if (p.thema) z.push(["Thema", esc(p.thema)]);
-      if (p.abgabe) z.push(["Abgabe", esc(p.abgabe)]);
-      if (p.art === "IVA") z.push(["Umfang", `${p.ects || 10} ECTS`]);
+      aktionen.push(p.avbDatei ? avbLink(p) + ` <span class="link klein" onclick="avbWaehlen('${p.id}')">neue Fassung</span>` : `<button class="klein" onclick="avbWaehlen('${p.id}')">↑ AVB hochladen</button>`);
+      if (p.ub && p.status !== "abgeschlossen") aktionen.push(`<button class="klein" title="Mail-Entwurf und Outlook-Termin" onclick="besuchMitteilen('${p.id}')">✉ / 📅</button>`);
+      if (x && x.mail && p.status !== "abgeschlossen") aktionen.push(`<a class="link klein" href="mailto:${esc(x.mail.trim())}">✉ PxL</a>`);
     }
-    if (p.notiz) z.push(["Notiz", `<span style="white-space:pre-wrap">${esc(p.notiz)}</span>`]);
-    // Abgeschlossenes nur als eine Zeile
-    if (p.status === "abgeschlossen") return `<div class="baustein kompakt st-gruen" onclick="praktikumDialog('${p.id}')" title="öffnen">✓ <b>${esc(ART[p.art].name)}</b> · ${esc(p.semester || "")} · ${dozMarken(p)}${x ? " · " + esc(pxlKurz(x)) : p.thema ? " · " + esc(p.thema) : ""}${p.ub ? ` · <span class="leise">${datumKurz(p.ub)}</span>` : ""} ${avbLink(p)}</div>`;
-    return `<div class="baustein st-${si[2]}"><div class="bk"><b>${esc(ART[p.art].name)}${p.zusatz ? " (zusätzlich)" : ""}</b><span class="klein">${dozMarken(p)} ${esc(p.semester || "ohne Semester")}${p.aeb ? " · aeB" : ""}</span></div>
-      <div class="klein">${esc(si[1])} <button class="klein" style="float:right" onclick="praktikumDialog('${p.id}')">öffnen</button></div>
-      ${z.length ? `<dl>${z.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>` : ""}</div>`;
+    aktionen.push(`<button class="klein" onclick="praktikumDialog('${p.id}')">öffnen</button>`);
+    const lek = (p.lektionen || []).length && p.status !== "abgeschlossen" ? `<details ${p.ub ? "" : "open"}><summary class="klein">${p.lektionen.length} Lektionen aus der AVB${p.ub ? "" : " – eine als Besuch wählen"}</summary>${lektionenListe(p)}</details>` : "";
+    return `<div class="gross"><div class="gtitel">${esc(ART[p.art].name)}${p.zusatz ? " (zusätzlich)" : ""}</div>${kachel(p)}<div class="gakt">${aktionen.join(" ")}</div>${lek}</div>`;
   };
   const fehlt = ARTEN.filter((a) => anwendbar(s, a.k) && !pl.some((p) => p.art === a.k));
   const notizen = (D.notizen[s.id] || []).slice().reverse();
@@ -1605,9 +1604,9 @@ function personZeichnen() {
     <button class="klein" onclick="studiDialog('${s.id}')">Angaben ändern</button>
     ${istArchiv(s) ? `<button class="klein haupt" onclick="archivieren('${s.id}', false)">Aus dem Archiv zurückholen</button> <span class="mini">im Archiv</span>`
       : `<button class="klein ${alleFertig(s) ? "haupt" : ""}" title="Zu den Abgeschlossenen legen (jederzeit rückgängig)" onclick="archivieren('${s.id}', true)">ins Archiv</button>${alleFertig(s) ? ` <span class="mini ok">✓ alles abgeschlossen</span>` : ""}`}
+    <div class="apzeile">${s.ausbildungsplan ? `<span class="link" onclick="avbOeffnen(${esc(JSON.stringify(s.ausbildungsplan))})">📄 Ausbildungsplan (ganzes Studium)</span> <span class="link klein" onclick="apWaehlen('${s.id}')">neue Fassung</span>` : `<button class="klein" onclick="apWaehlen('${s.id}')">↑ Ausbildungsplan hochladen</button> <span class="mini">fürs ganze Studium</span>`}</div>
     <h3>Verlauf</h3>
-    ${pl.filter((p) => p.status !== "abgeschlossen").map(baustein).join("")}
-    ${pl.filter((p) => p.status === "abgeschlossen").map(baustein).join("")}
+    <div class="verlaufgitter">${ARTEN.flatMap((a) => pl.filter((p) => p.art === a.k)).map(baustein).join("")}</div>
     ${!pl.length ? `<p class="leise">Noch nichts eingetragen.</p>` : ""}
     ${!istArchiv(s) ? `<p>${fehlt.map((a) => `<button class="klein" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${esc(a.k)}</button>`).join(" ")} <button class="klein" onclick="praktikumNeu('${s.id}','BP')">＋ weiteres</button></p>` : ""}
     <h3>Bemerkungen <button class="klein" style="font-family:inherit;vertical-align:middle" onclick="const b=$('#bemBox'); b.hidden=!b.hidden; if(!b.hidden) $('#neueBemerkung').focus()">＋ neu</button></h3>
@@ -1618,6 +1617,15 @@ function personZeichnen() {
     ${!notizen.length && !s.bemerkung ? `<p class="leise klein">Noch keine.</p>` : ""}
     ${verlaufHtml("studi", s.id)}
   </div>`;
+}
+function apWaehlen(sid) { const i = document.createElement("input"); i.type = "file"; i.accept = ".pdf,.docx"; i.onchange = () => i.files[0] && apHochladen(sid, i.files[0]); i.click(); }
+async function apHochladen(sid, datei) {
+  if (!S.ich) return meldung("Bitte oben rechts «Ich bin» wählen.");
+  const s = D.studis[sid], end = (datei.name.match(/\.[a-z0-9]+$/i) || [".pdf"])[0].toLowerCase();
+  const basis = dateiName(`Ausbildungsplan ${s.name} ${s.vorname} ${heuteKurz()}`); let pfad, nr = 1;
+  while (true) { pfad = `Ausbildungspläne/${basis}${nr > 1 ? ` (${nr})` : ""}${end}`; try { await wurzelDatei(pfad); nr++; } catch (e) { break; } }
+  try { const w = await (await wurzelDatei(pfad, true)).createWritable(); await w.write(datei); await w.close(); } catch (e) { return meldung("Hochladen ging nicht: " + e.message); }
+  if (await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { ausbildungsplan: pfad } })) meldung("Ausbildungsplan abgelegt: " + pfad);
 }
 async function bemerkungSpeichern(id, art = "studi", feldId = "neueBemerkung") {
   const t = $("#" + feldId).value.trim(); if (!t) return;
