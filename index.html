@@ -621,8 +621,11 @@ function lektionenAus(zeilen, sem) {
     // feste Tabelle (neue Vorlage): Kopfzeile erkennen
     if (z.zellen && z.zellen.some((c) => /^datum$/i.test(c.trim())) && z.zellen.some((c) => /^(von|zeit|unterrichtszeit)/i.test(c.trim()))) {
       const ix = (re) => z.zellen.findIndex((c) => re.test(c.trim()));
-      kopf = { art: ix(/^art|^hosp/i), datum: ix(/^datum/i), klasse: ix(/^klasse/i), von: ix(/^von/i), bis: ix(/^bis/i), zeit: ix(/zeit/i), anzahl: ix(/^lektion|^anzahl/i), raum: ix(/^raum|^zimmer/i), n: z.zellen.length };
-      aktiv = true; if (!modus) modus = "U"; continue;
+      kopf = { art: ix(/^art$|^hosp/i), datum: ix(/^datum/i), klasse: ix(/^klasse/i), von: ix(/^von/i), bis: ix(/^bis/i), zeit: ix(/zeit/i), anzahl: ix(/^lektion|^anz/i), raum: ix(/^raum|^zimmer/i), n: z.zellen.length };
+      // Vorlage der PH: «Angaben zu allen Hospitationen:» bzw. «Angaben zu allen Unterrichtslektionen:» in der ersten Zelle der Kopfzeile
+      const label = (z.zellen[0] || "").trim();
+      modus = /hospitation/i.test(label) ? "H" : /unterricht/i.test(label) ? "U" : modus || "U";
+      aktiv = true; continue;
     }
     if (kopf && z.zellen && z.zellen.length === kopf.n) {
       const c = (k) => (kopf[k] >= 0 ? (z.zellen[kopf[k]] || "").trim() : "");
@@ -856,7 +859,6 @@ function vStart() {
     ["vb", "Vorbesprechung vereinbaren", sicht.filter((p) => ART[p.art].praktikum && ["zusage", "avb"].includes(p.status) && !p.vbDatum && !p.ub), (p) => zeile(p, pxlInfo(p))],
     ["ub", "UB vereinbaren", sicht.filter((p) => p.status === "avb" && !p.ub), (p) => zeile(p, pxlInfo(p) + (p.avbDatei ? " · " + avbLink(p) : ""))],
     ["arbeiten", "Arbeiten in Arbeit", sicht.filter((p) => ["PA", "IVA"].includes(p.art) && ["laeuft", "abgegeben"].includes(p.status)), (p) => zeile(p, `${p.thema ? " · " + esc(p.thema) : ""}${p.abgabe ? ` · <span class="leise">Abgabe ${esc(abgabeText(p.abgabe))}</span>` : ""}`)],
-    ["ohnesem", "Noch ohne Semester", alle.filter((p) => relevant(p) && !p.semester && !erledigt(p) && p.art !== "DP" && D.studis[p.student].stand === "aktiv"), (p) => zeile(p, umfangKurz(p) ? ` · <span class="leise">${esc(umfangKurz(p))}</span>` : "")],
     ["archiv", "Fertig – ins Archiv?", Object.values(D.studis).filter((s) => !istArchiv(s) && alleFertig(s)), (s) => `<li><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span> <button class="klein" onclick="archivieren('${s.id}', true)">ins Archiv</button></li>`],
   ];
   const offen = aufgaben.find((x) => x[0] === S.f.startOffen && x[2].length);
