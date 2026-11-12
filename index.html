@@ -550,7 +550,7 @@ function kuerzelListe(l) { return (Array.isArray(l) ? l : [l]).flatMap((x) => St
 function dozText(p) { return ((p.doz || []).length ? p.doz.join("+") : "???") + ((p.vertretung || []).length ? " · vertr. " + p.vertretung.join("+") : ""); }
 function istMeins(p) { return (p.doz || []).includes(S.ich) || (p.vertretung || []).includes(S.ich); }
 const beteiligt = (p, k) => (p.doz || []).includes(k) || (p.vertretung || []).includes(k);
-function betreuungenVon(xid) { return Object.values(D.praktika).filter((p) => p.pxl === xid).sort((a, b) => semKey(b.semester) - semKey(a.semester)); }
+function betreuungenVon(xid) { return Object.values(D.praktika).filter((p) => p.pxl === xid || p.bmsPxl === xid).sort((a, b) => semKey(b.semester) - semKey(a.semester)); }
 function verfVon(x, sem) { return (x.verfuegbar || {})[sem] || {}; }
 /* Passt die PxL für diese Praktikumsart? (Kopfzeilen der Excel-Liste: PP nur an Kantonsschule; FMS/BMS: max. SP oder BP, nicht beides) */
 function passtNicht(x, p) {
@@ -1039,9 +1039,12 @@ function vPxl() {
   <span class="gr">${chips("pxlTyp", [["", "alle Schulen"], ...typen.map((t) => [t, t])])}</span>
   <span class="gr"><input id="pxlsuche" placeholder="Name, Schule, Kanton" value="${esc(S.f.pxlSuche)}" oninput="filterTipp('pxlSuche', this.value)"></span>
   <button onclick="S.nachPxl = null; pxlDialog()">＋ neue PxL</button><span class="leise klein">${liste.length} von ${Object.keys(D.pxl).length}</span></div>
-  ${typen.filter((t) => liste.some((x) => x.schultyp === t)).map((t) => `<h3>${t} <span class="leise klein" style="font-family:inherit">${esc(S.stamm.schultypen[t] || "")}</span></h3>
+  ${typen.filter((t) => liste.some((x) => x.schultyp === t && !x.einmalig)).map((t) => `<h3>${t} <span class="leise klein" style="font-family:inherit">${esc(S.stamm.schultypen[t] || "")}</span></h3>
   <table><thead><tr><th>Name</th><th>Schule · Reise</th><th>Hinweise <span class="mini" style="font-weight:400">(Antworten zur Verfügbarkeit)</span></th><th>Verfügbar ${sem}</th><th>Betreut ${sem}</th><th>Früher betreut</th></tr></thead><tbody>
-  ${liste.filter((x) => x.schultyp === t).sort((a, b) => a.kanton.localeCompare(b.kanton) || a.name.localeCompare(b.name)).map(zeile).join("")}</tbody></table>`).join("")}`;
+  ${liste.filter((x) => x.schultyp === t && !x.einmalig).sort((a, b) => a.kanton.localeCompare(b.kanton) || a.name.localeCompare(b.name)).map(zeile).join("")}</tbody></table>`).join("")}
+  ${liste.some((x) => x.einmalig) ? `<h3>Einmalig <span class="leise klein" style="font-family:inherit">von Studierenden angefragt – haben schon einmal begleitet, nicht fest in der Liste (keine Vorschläge in der Zuteilung)</span></h3>
+  <table><thead><tr><th>Name</th><th>Schule · Reise</th><th>Hinweise</th><th>Verfügbar ${sem}</th><th>Betreut ${sem}</th><th>Früher betreut</th></tr></thead><tbody>
+  ${liste.filter((x) => x.einmalig).sort((a, b) => a.name.localeCompare(b.name)).map(zeile).join("")}</tbody></table>` : ""}`;
 }
 async function pxlHinweis(xid, t) { await eintragen({ typ: "aendern", art: "pxl", ref: xid, felder: { hinweise: t.trim() || null } }); }
 async function verfSetzen(xid, sem, stand) {
@@ -1080,7 +1083,7 @@ function wegStufe(s, x) {
 function vorschlaege(p, sem) {
   const s = D.studis[p.student], sj = sjVon(sem), semsJahr = semsVonSj(sj);
   const vorher = new Set(praktikaVon(p.student).filter((q) => q.id !== p.id).map((q) => q.pxl));
-  return Object.values(D.pxl).map((x) => {
+  return Object.values(D.pxl).filter((x) => !x.einmalig).map((x) => {
     const v = verfVon(x, sem).stand || "", nicht = passtNicht(x, p);
     const andere = Object.values(D.praktika).filter((q) => q.pxl === x.id && q.id !== p.id && ART[q.art].praktikum);
     const imSem = andere.filter((q) => q.semester === sem), imSj = andere.filter((q) => semsJahr.includes(q.semester) && q.semester !== sem);
@@ -1839,6 +1842,7 @@ function pxlDialog(id) {
     ${auswahl("x_schultyp", "Schultyp", x.schultyp, [["Gymnasium", "Gymnasium / Kantonsschule"], ["FMS", "FMS"], ["BMS", "BMS / Berufsfachschule"]])}
     ${feld("x_kanton", "Kanton", x.kanton)}${feld("x_schule", "Schule", x.schule)}${feld("x_mail", "E-Mail", x.mail, "email")}${feld("x_tel", "Telefon", x.tel)}
     ${feld("x_reise", "Reiseweg (SBB + zu Fuss)", x.reise)}${feld("x_adresse", "Adresse", x.adresse)}${feld("x_nebenfach", "Nebenfach", x.nebenfach)}${feld("x_hochschule", "Hochschule", x.hochschule)}
+    <label>Einmalig</label><label class="ohne"><input type="checkbox" id="x_einmalig" ${x.einmalig ? "checked" : ""}> von Studierenden angefragt, nicht fest in der Liste</label>
     ${feld("x_hinweise", "Hinweise", x.hinweise, "text", 'placeholder="z.B. ab Aug 26, kein PP"')}${feld("x_kurz", "Achtung", x.kurz, "text", 'placeholder="z.B. 70-Min.-Lektionen"')}
     ${x.planung ? `<label>Excel «Betreuung HS26»</label><span class="klein">${esc(x.planung)}</span>` : ""}</div>`;
   const inhalt = !id ? angaben : `
@@ -1857,6 +1861,7 @@ async function pxlSpeichern(id) {
   const v = (k) => $("#x_" + k).value.trim();
   const neu = Object.fromEntries(["name", "vorname", "schultyp", "kanton", "schule", "mail", "tel", "reise", "adresse", "nebenfach", "hochschule", "hinweise", "kurz"].map((k) => [k, v(k)]));
   if (!neu.name) return meldung("Bitte einen Namen eintragen.");
+  neu.einmalig = $("#x_einmalig").checked;
   if (id) {
     const f = unterschiede(D.pxl[id], neu);
     for (const s of semesterListe().filter((s) => semKey(s) >= semKey(semHeute()) - 1)) {
