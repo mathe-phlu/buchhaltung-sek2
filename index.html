@@ -982,11 +982,14 @@ document.addEventListener("click", (e) => { const pop = document.getElementById(
 const hinwBlock = (p) => (hinweisListe(p).length ? `<div class="hinwblock">${hinweisListe(p).map((h) => `<div class="hinw">ⓘ ${esc(h)}</div>`).join("")}</div>` : "");
 /* 📄 oben rechts: AVB direkt öffnen (bei mehreren: Zahl) */
 const avbIcon = (p) => (p.avbDatei ? `<span class="avbicon" title="AVB öffnen: ${esc(p.avbDatei)}${(p.avbWeitere || []).length ? "\n+ " + p.avbWeitere.map((w) => w.titel).join(", ") + " (im Praktikum)" : ""}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.avbDatei))})">📄${(p.avbWeitere || []).length ? `<sup>${1 + p.avbWeitere.length}</sup>` : ""}</span>` : "");
+/* Filter Semester, Doz und Stand: was nicht passt, wird blass (die Zeile bleibt, damit der Verlauf lesbar ist) */
+const abgeblendet = (p) => (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz))) || (S.f.status && statusInfo(p)[2] !== S.f.status);
+const filterBlass = () => (S.f.sem || S.f.doz || S.f.status ? "opacity:.38" : "");
 function kachel(p) {
   // angerechnet (Vorleistung): erübrigt sich – nur ein graues Feld, ohne Doz, Semester, Umfang
-  if (p.status === "angerechnet") return `<div class="kachel st-na anger" onclick="praktikumDialog('${p.id}')" title="angerechnet (Vorleistung) – zum Ändern anklicken"><div class="kz k1"><span>⊕ angerechnet</span>${hinwKnopf(p)}</div><div class="kz">Vorleistung</div></div>`;
+  if (p.status === "angerechnet") return `<div class="kachel st-na anger" style="${abgeblendet(p) ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')" title="angerechnet (Vorleistung) – zum Ändern anklicken"><div class="kz k1"><span>⊕ angerechnet</span>${hinwKnopf(p)}</div><div class="kz">Vorleistung</div></div>`;
   const si = statusInfo(p), x = D.pxl[p.pxl], fertig = erledigt(p);
-  const ab = (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)));
+  const ab = abgeblendet(p);
   const z = (inhalt, cls = "", titel = "") => `<div class="kz ${cls}" ${titel ? `title="${esc(titel)}"` : ""}>${inhalt}</div>`;
   const kopf = z(`<span>${p.art === "DP" ? "" : dozMarken(p) + " "}${esc(p.semester || "Sem. ?")}${ART[p.art].praktikum && umfangKurz(p) ? ` · ${umfangKurz(p)}` : ""}${p.aeb ? " · aeB" : ""}</span><span class="kicons">${hinwKnopf(p)}${avbIcon(p)}${fertig ? "✓" : ""}</span>`, "k1", [si[1], p.umfang && "Umfang: " + p.umfang, p.umfangNotiz].filter(Boolean).join("\n"));
   const zeilen = [], leer = () => z("&nbsp;");
@@ -1019,15 +1022,15 @@ function kachel(p) {
     }
   }
   const bx = D.pxl[p.bmsPxl];
-  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L</span><span class="kicons">${p.bmsAvbDatei ? `<span class="avbicon" title="AVB BMS öffnen: ${esc(p.bmsAvbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.bmsAvbDatei))})">📄</span>` : ""}</span></div><div class="kz">${bx ? esc(pxlKurz(bx)) : "&nbsp;"}</div><div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz stand"><span class="sp">selbst organisiert</span></div><div class="kz besuch leise">kein Besuch</div></div>` : "";
+  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" style="${ab ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L</span><span class="kicons">${p.bmsAvbDatei ? `<span class="avbicon" title="AVB BMS öffnen: ${esc(p.bmsAvbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.bmsAvbDatei))})">📄</span>` : ""}</span></div><div class="kz">${bx ? esc(pxlKurz(bx)) : "&nbsp;"}</div><div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz stand"><span class="sp">selbst organisiert</span></div><div class="kz besuch leise">kein Besuch</div></div>` : "";
   return `<div class="kachel st-${si[2]}" style="${ab ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')">${kopf}${zeilen.join("")}</div>${bmsKachel}`;
 }
 function vVerlaeufe() {
   const liste = studisGefiltert(), sems = semesterListe();
   const zellen = (s) => ARTEN.map((a) => {
     const pl = praktikaVon(s.id).filter((p) => p.art === a.k);
-    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na" title="erübrigt sich">${esc(entfallGrund(s, a.k))}</div></td>`;
-    return `<td class="zelle">${pl.map(kachel).join("")}${!pl.length ? `<div class="plus" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${a.k}${umfangZahl(sollUmfang(s, a.k)) ? " · " + umfangZahl(sollUmfang(s, a.k)) + " L" : ""}</div>` : ""}</td>`;
+    if (!pl.length && !anwendbar(s, a.k)) return `<td class="zelle"><div class="kachel st-na" style="${filterBlass()}" title="erübrigt sich">${esc(entfallGrund(s, a.k))}</div></td>`;
+    return `<td class="zelle">${pl.map(kachel).join("")}${!pl.length ? `<div class="plus" style="${filterBlass()}" onclick="praktikumNeu('${s.id}','${a.k}')">＋ ${a.k}${umfangZahl(sollUmfang(s, a.k)) ? " · " + umfangZahl(sollUmfang(s, a.k)) + " L" : ""}</div>` : ""}</td>`;
   }).join("");
   return `<h2>Studierende</h2>${ansichtUmschalter()}
   ${filterBox(true, liste.length)}
