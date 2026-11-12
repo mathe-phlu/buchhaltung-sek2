@@ -79,6 +79,19 @@ table.vtab tr.gesperrt td { opacity: .5; }
 .warnung-klein { color: #8a5a00; }
 textarea.hinwfeld { width: 100%; min-width: 180px; min-height: 28px; font-size: 12.5px; padding: 3px 5px; resize: vertical; border-color: #e2dccd; background: #fffdf8; }
 td.frueher div { white-space: nowrap; line-height: 1.5; } .fsem { display: inline-block; min-width: 38px; color: #888; font-size: 11.5px; }
+#tour { position: fixed; z-index: 70; width: 440px; max-width: calc(100vw - 20px); max-height: 82vh; overflow: auto; background: #fff; border-radius: 10px; box-shadow: 0 0 0 2px var(--braun), 0 14px 40px rgba(0,0,0,.35); font-size: 15px; line-height: 1.5; transition: top .3s, left .3s; }
+#tour .t-kopf { background: var(--braun); color: #fff; padding: 10px 14px 8px; cursor: move; user-select: none; position: sticky; top: 0; }
+#tour .t-zeile { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: #f3e9da; }
+#tour .t-zu { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 12.5px; }
+#tour h4 { margin: 4px 0 6px; font-family: var(--hand); font-size: 25px; font-weight: 400; color: #fff; line-height: 1.15; }
+#tour .t-balken { display: flex; gap: 4px; height: 5px; } #tour .t-balken span { background: rgba(255,255,255,.3); border-radius: 2px; overflow: hidden; } #tour .t-balken i { display: block; height: 100%; background: #fff; }
+#tour .t-inhalt { padding: 10px 16px 4px; } #tour .t-inhalt p { margin: 6px 0; }
+#tour ul { margin: 2px 0; padding-left: 0; list-style: none; } #tour li { margin: 0 0 8px; padding-left: 18px; position: relative; }
+#tour li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 7px; height: 7px; border-radius: 2px; background: var(--braun); }
+#tour .tk { display: flex; gap: 8px; justify-content: space-between; align-items: center; padding: 10px 16px 14px; border-top: 1px solid var(--linie); margin-top: 6px; }
+#tour .tk select { font-size: 12.5px; max-width: 190px; color: var(--leise); }
+.tour-licht { outline: 3px solid #e0a43a !important; outline-offset: 3px; border-radius: 4px; box-shadow: 0 0 0 9999px rgba(0,0,0,.22) !important; position: relative; z-index: 40; }
+.rgknopf { background: #fff3; color: #fff; border-color: #fff8; }
 .dozwahl { display: inline-block; border: 1.5px solid var(--f); color: var(--f); background: #fff; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 3px; line-height: 18px; user-select: none; }
 .dozwahl.an { background: var(--f); color: #fff; }
 .dozwahl.f_vertretung.an { background: #fff; color: var(--f); border-style: dashed; box-shadow: inset 0 0 0 1px var(--f); }
@@ -200,6 +213,7 @@ details > summary { cursor: pointer; margin: 6px 0; }
     <span class="marke">Entwurf</span>
     <span id="beispielMarke"></span>
     <div class="rechts">
+      <button class="klein rgknopf" onclick="rundgangStart()" title="Rundgang mit Beispieldaten – nichts wird gespeichert">▶ Rundgang</button>
       <span id="ordnerstatus" class="klein"></span>
       <label class="klein">Ich bin <select id="ich" onchange="ichWaehlen(this.value)"></select></label>
     </div>
@@ -603,7 +617,7 @@ async function docxZeilen(datei) {
   lauf(xml.getElementsByTagName("w:body")[0]);
   return zeilen;
 }
-const ZEIT2 = /(\d{1,2})[.:h](\d{2})\s*(?:Uhr)?\s*(?:–|—|-|−|·|bis)\s*(\d{1,2})[.:h](\d{2})/;
+const ZEIT2 = /(\d{1,2})[.:h](\d{2})\s*(?:Uhr)?\s*(?:–|—|-|−|·|bis)\s*(\d{1,2})[.:h-](\d{2})/;
 const DATUM_RE = /(?<![\d.:])(\d{1,2})\.\s?(\d{1,2})\.?(?:\s?(\d{4}|\d{2}))?(?![\d:])/;
 const hhmm = (h, m) => String(Number(h)).padStart(2, "0") + ":" + m;
 function datumMitJahr(tag, mon, jahr, sem) {
@@ -614,17 +628,20 @@ function datumMitJahr(tag, mon, jahr, sem) {
   const d = new Date(Date.UTC(j, mon - 1, tag)); return d.getUTCMonth() === mon - 1 ? d.toISOString().slice(0, 10) : "";
 }
 function lektionenAus(zeilen, sem) {
-  const L = []; let modus = "", aktiv = false, kopf = null, letzteKlasse = { U: "", H: "" };
+  const L = []; let modus = "", aktiv = false, kopf = null, kopfZahl = 0, letztesDatum = "", letzteKlasse = { U: "", H: "" };
+  // Vorlage der PH: Tabellen mit «Angaben zu allen …» – Zeilen davor (Umfang, «1.5 L» …) sind keine Lektionen
+  const mitKopf = zeilen.some((z) => /Angaben zu allen/i.test(z.text));
   for (const z of zeilen) {
     const t = z.text;
-    if (/Die Beteiligten|Datum\s*\/\s*Unterschrift/i.test(t)) break;
+    if (/Die Beteiligten|Datum\s*\/\s*Unterschrift|^\s*Datum und\b|^\s*Unterschriften/i.test(t)) break;
     // feste Tabelle (neue Vorlage): Kopfzeile erkennen
     if (z.zellen && z.zellen.some((c) => /^datum$/i.test(c.trim())) && z.zellen.some((c) => /^(von|zeit|unterrichtszeit)/i.test(c.trim()))) {
       const ix = (re) => z.zellen.findIndex((c) => re.test(c.trim()));
       kopf = { art: ix(/^art$|^hosp/i), datum: ix(/^datum/i), klasse: ix(/^klasse/i), von: ix(/^von/i), bis: ix(/^bis/i), zeit: ix(/zeit/i), anzahl: ix(/^lektion|^anz/i), raum: ix(/^raum|^zimmer/i), n: z.zellen.length };
       // Vorlage der PH: «Angaben zu allen Hospitationen:» bzw. «Angaben zu allen Unterrichtslektionen:» in der ersten Zelle der Kopfzeile
       const label = (z.zellen[0] || "").trim();
-      modus = /hospitation/i.test(label) ? "H" : /unterricht/i.test(label) ? "U" : modus || "U";
+      kopfZahl++;
+      modus = /hospitation/i.test(label) ? "H" : /unterricht/i.test(label) ? "U" : kopfZahl === 1 ? "H" : "U";
       aktiv = true; continue;
     }
     if (kopf && z.zellen && z.zellen.length === kopf.n) {
@@ -635,23 +652,29 @@ function lektionenAus(zeilen, sem) {
       if (zm) { von = hhmm(zm[1], zm[2]); bis = hhmm(zm[3], zm[4]); }
       else { const a = /(\d{1,2})[.:h](\d{2})/.exec(c("von")), b = /(\d{1,2})[.:h](\d{2})/.exec(c("bis")); if (a) von = hhmm(a[1], a[2]); if (b) bis = hhmm(b[1], b[2]); }
       const art = /hosp/i.test(c("art")) ? "H" : kopf.art >= 0 ? "U" : modus || "U";
-      L.push({ art, datum: datumMitJahr(dm[1], dm[2], dm[3], sem), von, bis, klasse: c("klasse"), anzahl: (c("anzahl").match(/\d+/) || [""])[0], raum: c("raum").replace(/^(Zi\.?|Zimmer|Raum)\s*/i, "") });
+      L.push({ art, datum: datumMitJahr(dm[1], dm[2], dm[3], sem), von, bis, klasse: c("klasse"), anzahl: (c("anzahl").match(/\d+(?:[.,]5)?/) || [""])[0], raum: c("raum").replace(/^(Zi\.?|Zimmer|Raum)\s*/i, "") });
       continue;
     }
     if (z.teil && kopf) continue;
+    // Vorlage der PH als PDF: zwei Tabellen mit Kopf «Angaben zu allen | Datum | Klasse …» – oben Hospitationen, darunter Unterricht
+    if (/Angaben zu allen/i.test(t) && !(kopf && z.zellen)) { kopfZahl++; letztesDatum = ""; modus = /Unterricht/i.test(t) ? "U" : /Hospitation/i.test(t) ? "H" : kopfZahl === 1 ? "H" : "U"; aktiv = true; continue; }
+    if (mitKopf && !kopfZahl) continue;
+    if (kopfZahl) { if (/Unterrichtslektion/i.test(t) && kopfZahl >= 2) modus = "U"; }
     // Abschnitt erkennen (Label der Vorlage)
-    if ((/Hospitation/i.test(t) && !/mit Hospitation|inkl\.? Hospitation/i.test(t)) || /Anzahl und Daten der(?! Zeiten)/i.test(t)) { modus = "H"; aktiv = true; }
+    else if ((/Hospitation/i.test(t) && !/mit Hospitation|inkl\.? Hospitation/i.test(t)) || /Anzahl und Daten der(?! Zeiten)/i.test(t)) { modus = "H"; aktiv = true; }
     else if (/zum Unterricht|Zeiten der|Daten und Zeiten|Unterricht\s*:/i.test(t)) { modus = "U"; aktiv = true; }
     else if (/Umfang/i.test(t)) aktiv = true;
     if (!aktiv) continue;
-    let rest = t;
+    let rest = kopfZahl ? t.replace(/Hospitationen\s*:|Unterrichtslektionen\s*:/gi, " ") : t;
     const zm = ZEIT2.exec(rest); let von = "", bis = "", zeitPos = -1;
     if (zm) { von = hhmm(zm[1], zm[2]); bis = hhmm(zm[3], zm[4]); zeitPos = zm.index; }
     const dm = DATUM_RE.exec(zeitPos >= 0 ? rest.slice(0, zeitPos) : rest);
-    if (!dm) continue;
-    const datum = datumMitJahr(dm[1], dm[2], dm[3], sem); if (!datum) continue;
-    if (!zm && modus !== "H") continue;     // ohne Uhrzeit nur Hospitationen
-    const nachDatum = rest.slice(dm.index + dm[0].length, zeitPos >= 0 ? zeitPos : undefined);
+    // in der Tabelle der Vorlage: zweite Lektion am selben Tag steht ohne Datum in der nächsten Zeile
+    if (!dm && !(kopfZahl && zm && letztesDatum)) continue;
+    const datum = dm ? datumMitJahr(dm[1], dm[2], dm[3], sem) : letztesDatum; if (!datum) continue;
+    letztesDatum = datum;
+    if (!zm && modus !== "H" && !kopfZahl) continue;     // ohne Uhrzeit nur Hospitationen (in der Tabelle der Vorlage: Zeit «jeweils» aus einer anderen Zeile)
+    const nachDatum = rest.slice(dm ? dm.index + dm[0].length : 0, zeitPos >= 0 ? zeitPos : undefined);
     const danach = zeitPos >= 0 ? rest.slice(zeitPos + zm[0].length) : nachDatum;
     let notiz = "";
     const oder = /oder\s+(\d{1,2}\.\s?\d{1,2}\.?(?:\d{2,4})?)/i.exec(nachDatum); if (oder) notiz = "oder " + oder[1];
@@ -663,17 +686,21 @@ function lektionenAus(zeilen, sem) {
     if (!klasse) klasse = letzteKlasse[modus || "U"]; else letzteKlasse[modus || "U"] = klasse;
     let anzahl = lekt ? ({ eine: "1", zwei: "2", drei: "3" }[lekt[1].toLowerCase()] || lekt[1]) : "", raum = raumM ? raumM[1] : "";
     if (zeitPos >= 0 && (!lekt || !raumM)) { // Tabelle im PDF: nach der Zeit «2 | 231» = Lektionen, Raum
-      const zahlen = danach.replace(/\(.*?\)/g, "").match(/\b\d{1,4}\b/g) || [];
-      if (!anzahl && zahlen.length && Number(zahlen[0]) <= 4) anzahl = zahlen.shift();
-      if (!raum && zahlen.length) raum = zahlen[0];
+      let r = danach.replace(/\(.*?\)/g, " ").replace(/\|/g, " ").replace(/\s+/g, " ").trim();
+      const an = /^(\d(?:[.,]5)?)(?:\s+|$)/.exec(r);   // «1.5 | O 101»: Anzahl (auch halbe), dann Raum
+      if (an && Number(an[1].replace(",", ".")) <= 4) { if (!anzahl) anzahl = an[1]; r = r.slice(an[0].length); }
+      if (!raum && r) { const rm = /^([A-Z]{0,2}\s?\d{1,4}[a-z]?|[A-Z]\d{1,4})\b/.exec(r); if (rm) raum = rm[1]; }
     }
-    L.push({ art: modus === "H" ? "H" : "U", datum, von, bis, klasse, anzahl, raum, ...(notiz ? { notiz } : {}) });
+    L.push({ art: modus === "H" ? "H" : "U", datum, von, bis, klasse, anzahl, raum, tab: kopfZahl, ...(notiz ? { notiz } : {}) });
   }
+  // «jeweils 14:55 – 16:30»: fehlende Zeiten aus derselben Tabelle übernehmen
+  for (const l of L) if (!l.von && l.tab) { const m = L.find((x) => x.tab === l.tab && x.von); if (m) { l.von = m.von; l.bis = m.bis; if (!l.raum) l.raum = m.raum; } }
+  for (const l of L) delete l.tab;
   // aufräumen: «von», «Do.», Jahreszahlen o.ä. sind keine Klassen; «…mmer» ist kein Raum
   for (const l of L) { if (/^(von|bis|Mo|Di|Mi|Do|Fr|Sa)\.?$|^\d{4}$|^[()\d:\s.]*$|Hospitation/i.test(l.klasse || "")) l.klasse = ""; if (/mmer/.test(l.raum || "")) l.raum = ""; }
   // neuere Vorlage: das Label «Unterricht» steht oft mitten in der Tabelle – ohne erkannten Unterricht gilt alles als Unterricht
   const mitZeit = L.filter((l) => l.von);
-  if (mitZeit.length >= 3 && !mitZeit.some((l) => l.art === "U")) for (const l of mitZeit) l.art = "U";
+  if (!kopfZahl && mitZeit.length >= 3 && !mitZeit.some((l) => l.art === "U")) for (const l of mitZeit) l.art = "U";
   const gesehen = new Set();
   return L.filter((l) => { const k = [l.art, l.datum, l.von, l.klasse].join("|"); if (gesehen.has(k)) return false; gesehen.add(k); return l.datum; }).sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von));
 }
@@ -832,7 +859,7 @@ function willkommen() {
   und <code>Daten/eintraege</code> – jede Änderung als eigene kleine Datei, je Person ein Unterordner. Niemand überschreibt etwas von anderen.</p>
   ${S.ordnerWartet ? `<p><button class="haupt" onclick="zugriffErlauben()">Zugriff auf «${esc(S.ordnerWartet.name)}» erlauben</button></p>` : ""}
   <p><button class="${S.ordnerWartet ? "" : "haupt"}" onclick="ordnerWaehlen()">Ordner wählen …</button>
-  &nbsp; <button onclick="beispielLaden()">Beispiel ansehen (erfundene Daten)</button></p>
+  &nbsp; <button onclick="rundgangStart()">▶ Rundgang (Beispieldaten)</button></p>
   <p class="leise klein">Nur Chrome oder Edge. Die Excel-Listen bleiben unverändert; sie werden nur gelesen.</p></div></div>`;
 }
 
@@ -1880,9 +1907,112 @@ async function beispielLaden() {
   await allesLaden();
 }
 
+/* ====================== Rundgang (für Christof): führt mit Beispieldaten durch die Seite – nichts wird gespeichert ====================== */
+const RG = { schritt: 0, vorher: null };
+const rgKachel = (cls) => [...document.querySelectorAll(".raster .kachel" + (cls || ""))].find((k) => k.offsetParent);
+const rgOffenesPraktikum = () => Object.values(D.praktika).find((p) => p.semester === semHeute() && ART[p.art].praktikum && ["offen", "pxl_suchen", "angefragt"].includes(p.status) && D.studis[p.student]);
+const rgMitLektionen = () => Object.values(D.praktika).find((p) => (p.lektionen || []).length && p.status === "ub_geplant") || Object.values(D.praktika).find((p) => (p.lektionen || []).length);
+const rgZuDialog = () => { if ($("#dlg").open) $("#dlg").close(); };
+const RG_SCHRITTE = [
+  // --- 1 Überblick
+  { teil: "Überblick", titel: "Willkommen", text: "<p>Der Rundgang zeigt die Seite mit <b>erfundenen Beispieldaten</b> – nichts wird gespeichert, deine echten Daten bleiben unberührt.</p><ul><li>Er hat fünf Teile; unten lässt sich jeder Schritt direkt anwählen.</li><li>Das Kästchen lässt sich oben am Rand verschieben, falls es etwas verdeckt.</li></ul>", ansicht: "start" },
+  { teil: "Überblick", ziel: "#ich", titel: "Wer bin ich?", text: "<ul><li>Hier dein Kürzel wählen (<b>wec</b>). Alles, was du änderst, wird unter deinem Kürzel gespeichert – nie überschreibt jemand etwas von anderen.</li><li>Im Beispiel bist du schon wec.</li></ul>", ansicht: "start" },
+  { teil: "Überblick", ziel: "#nav", titel: "Die Reiter", text: "<ul><li><b>Start</b>: was ansteht.</li><li><b>Studierende</b>: der Verlauf aller Personen, wie die Excel-Liste.</li><li><b>Praxislehrpersonen</b>: Verfügbarkeit, Hinweise, wer wen betreut hat.</li><li><b>Zuteilung</b>: Praxislehrpersonen anfragen und zuteilen.</li><li><b>⚙ Einstellungen</b>: Team, Profile.</li></ul>", ansicht: "start" },
+  { teil: "Überblick", ziel: ".karte.termine", titel: "Start: deine nächsten Termine", text: "<ul><li>Unterrichtsbesuche, Prüfungslektionen, Vorbesprechungen und Diplomprüfungen – deine, wenn «nur meine» an ist.</li><li>Eine Zeile anklicken öffnet das Praktikum, der Name die Person.</li></ul>", ansicht: "start" },
+  { teil: "Überblick", ziel: ".kacheln-start", titel: "Start: was zu tun ist", text: "<ul><li>Jede Kachel zählt eine Aufgabe: <b>PxL finden</b>, <b>Angefragt</b>, <b>AVB ausstehend</b>, <b>Vorbesprechung vereinbaren</b>, <b>UB vereinbaren</b>, <b>Besuch vorbei – abschliessen?</b> …</li><li>Anklicken zeigt die Liste darunter.</li></ul>", ansicht: "start", vorher: () => { S.f.startOffen = "suchen"; zeichnen(); } },
+  // --- 2 Studierende
+  { teil: "Studierende", ziel: ".filter", titel: "Studierende: suchen und filtern", text: "<ul><li>Suchen nach Name, Ort, PxL oder Thema.</li><li>Filtern nach Personen (im Studium / Archiv), Doz, Semester und Stand. Darunter steht, welche Filter aktiv sind – «zurücksetzen» hebt sie auf.</li></ul>", ansicht: "studierende" },
+  { teil: "Studierende", ziel: () => rgKachel(".st-gelb") || rgKachel(), titel: "Eine Kachel lesen", text: "<ul><li>Oben: <b>wer begleitet</b> (Pille <span class='dozm' style='background:#2a5db0'>wec</span> blau, <span class='dozm' style='background:#7b4fa3'>alh</span> lila; gestrichelt = Vertretung), Semester, Umfang.</li><li>Darunter die <b>Praxislehrperson</b> und ihre <b>Schule</b>, dann der Stand.</li><li>Abgetrennt der <b>Besuch</b> mit Tag und Zeit – oder <b>⚠ UB vereinbaren</b>.</li><li>Farbe = Stand: weiss zu organisieren, rot PxL suchen/angefragt, gelb läuft, grün fertig, grau entfällt.</li></ul>", ansicht: "studierende" },
+  { teil: "Studierende", ziel: () => rgKachel(".st-bms") || rgKachel(".st-na"), titel: "Graue Felder", text: "<ul><li><b>Grau</b> heisst: erübrigt sich – z.B. kein Standortpraktikum im Zweit-/Zusatzfach, Vertiefungsarbeit bei <b>Berufspädagogik</b>, oder <b>angerechnet</b> (Vorleistung).</li><li>Gestrichelt daneben: der <b>BMS-Teil</b> eines Berufspraktikums (Synergie Berufspädagogik) – selbst organisiert, kein Besuch.</li></ul>", ansicht: "studierende" },
+  { teil: "Studierende", ziel: "#schublade", titel: "Eine Person ansehen", text: "<ul><li>Den <b>Namen</b> anklicken öffnet rechts alles zur Person: Angaben, <b>Ausbildungsplan</b>, der ganze Verlauf in grossen Kacheln, <b>Bemerkungen</b>.</li><li>Unter jeder Kachel: AVB ansehen oder hochladen, Mail an die PxL, «öffnen».</li></ul>", ansicht: "studierende",
+    vorher: () => { const s = Object.values(D.studis).find((x) => praktikaVon(x.id).some((p) => p.status === "ub_geplant")); if (s) personZeigen(s.id); }, nachher: () => personZu() },
+  // --- 3 Ein Praktikum
+  { teil: "Ein Praktikum", ziel: "#dlg .kopfzeile", titel: "Praktikum öffnen", text: "<ul><li>Eine Kachel anklicken öffnet das Praktikum.</li><li>Oben: <b>Semester</b> eintippen (z.B. «hs26», «f27»), <b>Doz</b> per Pille wählen – bei zweien beide anklicken –, <b>Vertretung</b>, wenn jemand anders besucht hat (wird doppelt abgerechnet), und der <b>Stand</b>.</li></ul>", ansicht: "studierende",
+    vorher: () => { const p = rgMitLektionen(); if (p) praktikumDialog(p.id); } },
+  { teil: "Ein Praktikum", ziel: "#pxlinfo", titel: "Praxislehrperson", text: "<ul><li>Auswählen aus der Liste; darunter Schule, Reiseweg, E-Mail und Telefon.</li><li>Fehlt die E-Mail, kannst du sie hier gleich eintragen.</li><li>«＋ neu», wenn die Person noch nicht in der Liste ist.</li></ul>", ansicht: "studierende", vorher: () => { if (!$("#dlg").open) { const p = rgMitLektionen(); if (p) praktikumDialog(p.id); } } },
+  { teil: "Ein Praktikum", ziel: "#dlg .ablage", titel: "Ausbildungsvereinbarung", text: "<ul><li>Die AVB hierher ziehen oder anklicken. Sie wird abgelegt und verknüpft, der Stand springt auf «UB vereinbaren».</li><li>Die App liest die <b>Lektionen</b> gleich heraus – am genauesten aus der <b>Word-Datei</b> (Tabellen Hospitationen / Unterricht).</li><li>Mehrere AVBs auf einmal: in den Ordner «Eingang AVB» legen, dann Zuteilung › 📥 AVB-Eingang.</li></ul>", ansicht: "studierende", vorher: () => { if (!$("#dlg").open) { const p = rgMitLektionen(); if (p) praktikumDialog(p.id); } } },
+  { teil: "Ein Praktikum", ziel: "#f_vbDatum", titel: "Vorbesprechung und Besuch", text: "<ul><li><b>Vorbesprechung</b>: Datum, Zeit, Ort oder online.</li><li><b>Unterrichtsbesuch</b>: Datum, von–bis, Klasse/Zimmer.</li><li>Einfacher: in der aufklappbaren Liste der <b>Lektionen aus der AVB</b> eine Lektion «als Besuch» wählen – Datum, Zeit und Raum werden übernommen.</li></ul>", ansicht: "studierende",
+    vorher: () => { if (!$("#dlg").open) { const p = rgMitLektionen(); if (p) praktikumDialog(p.id); } const d = $("#dlg details:not(.weiteres)"); if (d) d.open = true; } },
+  { teil: "Ein Praktikum", ziel: () => [...document.querySelectorAll("#dlg button")].find((b) => b.textContent.includes("mitteilen")), titel: "Besuch mitteilen", text: "<ul><li><b>✉ / 📅 mitteilen</b>: ein Mail-Entwurf an Studierende und PxL (mit dem Ablauf: Planung 24 h vorher, Auswertungsgespräch) und ein Outlook-Termin.</li><li>Abgeschickt wird erst in deinem Mailprogramm.</li></ul>", ansicht: "studierende", vorher: () => { if (!$("#dlg").open) { const p = rgMitLektionen(); if (p) praktikumDialog(p.id); } } },
+  { teil: "Ein Praktikum", ziel: "#f_hinweis", titel: "Hinweise und Notizen", text: "<ul><li><b>Hinweise</b> erscheinen auf der Kachel, je Zeile einer (z.B. «an eigener Schule»).</li><li><b>Notizen</b> sind nur hier im Fenster.</li><li>«Weitere Angaben»: Umfang, Wunsch, aeB, Synergie BMS, verkürzt.</li><li><b>Speichern</b> unten rechts.</li></ul>", ansicht: "studierende", vorher: () => { if (!$("#dlg").open) { const p = rgMitLektionen(); if (p) praktikumDialog(p.id); } }, nachher: rgZuDialog },
+  // --- 4 Praxislehrpersonen
+  { teil: "Praxislehrpersonen", ziel: () => document.querySelector("#main table select"), titel: "Verfügbarkeit erfassen", text: "<ul><li>Oben das Semester wählen, dann je Person: <b>ja</b>, angefragt, vielleicht, nein.</li><li>Die Zuteilung sortiert danach – wer «ja» sagt, steht oben.</li></ul>", ansicht: "pxl", vorher: rgZuDialog },
+  { teil: "Praxislehrpersonen", ziel: () => document.querySelector("textarea.hinwfeld"), titel: "Hinweise = Antworten", text: "<ul><li>Hier die Antworten auf deine Anfrage nach der Verfügbarkeit eintragen (z.B. «ab Aug 27», «nur BP»). Gespeichert wird beim Verlassen des Feldes.</li><li>🚆 = Reisezeit (SBB + zu Fuss).</li></ul>", ansicht: "pxl" },
+  { teil: "Praxislehrpersonen", ziel: () => document.querySelector("td.frueher"), titel: "Wer hat wen betreut?", text: "<ul><li><b>Betreut</b> im gewählten Semester und <b>früher betreut</b> (die letzten drei).</li><li>Der Name öffnet das Fenster der PxL: Kontakt, Verfügbarkeit mehrerer Semester, <b>Bemerkungen</b>, alle Begleitungen.</li></ul>", ansicht: "pxl" },
+  // --- 5 Zuteilung
+  { teil: "Zuteilung", ziel: "table.pensum", titel: "Pensum", text: "<ul><li>Je Doz: wie viele SP, BP, PP, PA, IVA im Semester <b>geplant</b> sind – und wie viele schon <b>zugeteilt</b> (rot, wenn mehr als geplant).</li></ul>", ansicht: "zuteilung", vorher: () => { S.f.zuSem = semHeute(); S.f.vorschlag = ""; zeichnen(); } },
+  { teil: "Zuteilung", ziel: "table.zuteilung", titel: "Noch ohne Zusage", text: "<ul><li>Alle Praktika des Semesters ohne Zusage: Person (Wohnort, Kanton, Profil), Art und Umfang, Wunsch.</li><li><b>Doz</b> per Pille, <b>PxL</b> direkt aus der Liste – oder über die Vorschläge.</li></ul>", ansicht: "zuteilung" },
+  { teil: "Zuteilung", ziel: ".vorschlaege", oben: true, titel: "Vorschläge", text: "<ul><li>«Vorschläge ▾» ordnet die PxL: verfügbar, <b>Weg</b> (gleicher Kanton = nah, Nachbarkanton = mittel, sonst weit), im Studienjahr noch frei, <b>wartet</b> = lange nichts bekommen.</li><li>Ausgegraut: passt nicht (PP nur am Gymnasium …), sagt nein, hat im Semester schon eine.</li><li><b>Wer zu wem passt, entscheidest du</b> – «anfragen» trägt die PxL ein.</li></ul>", ansicht: "zuteilung",
+    vorher: () => { const p = rgOffenesPraktikum(); if (p) { S.f.vorschlag = p.id; zeichnen(); } } },
+  { teil: "Zuteilung", ziel: () => [...document.querySelectorAll("table.zuteilung button")].find((b) => b.textContent.includes("Zusage")), titel: "Anfragen, Zusage, Mail", text: "<ul><li><b>✉ Entwurf</b>: Mail-Entwurf an die PxL.</li><li>Kommt die Zusage: <b>Zusage ✓</b> – dann erscheint das Praktikum auf dem Start unter «AVB ausstehend».</li><li>Dann AVB hochladen, Vorbesprechung und Besuch eintragen – siehe Teil 3.</li></ul>", ansicht: "zuteilung", vorher: () => { S.f.vorschlag = ""; zeichnen(); } },
+  { teil: "Zuteilung", titel: "Fertig", ende: true, text: "<ul><li>Der Rundgang lässt sich jederzeit oben rechts mit <b>▶ Rundgang</b> wieder starten.</li><li>Nach dem Schliessen siehst du wieder die echten Daten.</li></ul>", ansicht: "start" },
+];
+const RG_TEILE = [...new Set(RG_SCHRITTE.map((s) => s.teil))].map((name) => [name, RG_SCHRITTE.findIndex((s) => s.teil === name)]);
+async function rundgangStart() {
+  if (!RG.vorher) RG.vorher = { ordner: S.ordner, wurzel: S.wurzel, beispiel: S.beispiel, ich: S.ich, ansicht: S.ansicht, f: JSON.stringify(S.f) };
+  await beispielLaden(); S.ich = "wec"; S.f.nurMeine = false; filterZurueck();
+  let t = document.getElementById("tour"); if (!t) { t = document.createElement("div"); t.id = "tour"; document.body.appendChild(t); }
+  rgZeige(0);
+}
+function rgZeige(i) {
+  const alt = RG_SCHRITTE[RG.schritt]; if (alt && alt.nachher && i !== RG.schritt) alt.nachher();
+  document.querySelectorAll(".tour-licht").forEach((e) => e.classList.remove("tour-licht"));
+  RG.schritt = Math.max(0, Math.min(RG_SCHRITTE.length - 1, i));
+  const s = RG_SCHRITTE[RG.schritt];
+  if (s.ansicht && S.ansicht !== s.ansicht) { rgZuDialog(); personZu(); zeige(s.ansicht); }
+  if (s.vorher) s.vorher();
+  setTimeout(() => {
+    const t = document.getElementById("tour"), dlg = $("#dlg");
+    if (dlg.open && t.parentElement !== dlg) dlg.appendChild(t);
+    if (!dlg.open && t.parentElement !== document.body) document.body.appendChild(t);
+    let ziel = typeof s.ziel === "function" ? s.ziel() : s.ziel ? document.querySelector(s.ziel) : null;
+    const tn = RG_TEILE.findIndex(([n]) => n === s.teil), von = RG_TEILE[tn][1], bis = tn + 1 < RG_TEILE.length ? RG_TEILE[tn + 1][1] : RG_SCHRITTE.length;
+    const balken = RG_TEILE.map(([name, ab], n) => { const b = n + 1 < RG_TEILE.length ? RG_TEILE[n + 1][1] : RG_SCHRITTE.length, anteil = n < tn ? 1 : n > tn ? 0 : (RG.schritt - ab + 1) / (b - ab); return `<span title="${name}" style="flex:${b - ab}"><i style="width:${Math.round(anteil * 100)}%"></i></span>`; }).join("");
+    t.innerHTML = `<div class="t-kopf griff" title="Ziehen zum Verschieben"><div class="t-zeile"><span>Teil ${tn + 1} von ${RG_TEILE.length} · <b style="color:#fff">${s.teil}</b> · Schritt ${RG.schritt - von + 1} von ${bis - von}</span><button class="t-zu" onclick="rundgangEnde()">✕ Beenden</button></div>
+      <h4>${s.titel}</h4><div class="t-balken">${balken}</div></div>
+      <div class="t-inhalt">${s.text}</div>
+      <div class="tk"><select onchange="rgZeige(Number(this.value))">${RG_TEILE.map(([name, ab], n) => { const b = n + 1 < RG_TEILE.length ? RG_TEILE[n + 1][1] : RG_SCHRITTE.length; return `<optgroup label="${n + 1}. ${name}">${RG_SCHRITTE.slice(ab, b).map((x, k) => `<option value="${ab + k}" ${ab + k === RG.schritt ? "selected" : ""}>${x.titel}</option>`).join("")}</optgroup>`; }).join("")}</select>
+      <span style="display:flex;gap:8px">${RG.schritt ? `<button onclick="rgZeige(${RG.schritt - 1})">‹ Zurück</button>` : ""}${s.ende ? `<button class="haupt" onclick="rundgangEnde()">Schliessen</button>` : `<button class="haupt" onclick="rgZeige(${RG.schritt + 1})">Weiter ›</button>`}</span></div>`;
+    if (ziel && ziel.getBoundingClientRect().width) {
+      ziel.classList.add("tour-licht"); ziel.scrollIntoView({ block: s.oben ? "start" : "center" });
+      const r = ziel.getBoundingClientRect(), h = t.offsetHeight, b = t.offsetWidth;
+      let top, left = Math.min(innerWidth - b - 10, Math.max(10, r.left));
+      if (ziel.id === "schublade") { top = 90; left = Math.max(10, innerWidth - Math.min(640, innerWidth) - b - 20); }   // Seitenleiste fährt noch herein: Kästchen links daneben
+      else if (r.bottom + 14 + h < innerHeight) top = r.bottom + 14; else if (r.top - 14 - h > 0) top = r.top - 14 - h;
+      else if (r.left - b - 20 > 0) { top = Math.min(innerHeight - h - 16, Math.max(10, r.top)); left = r.left - b - 20; }   // links daneben (z.B. Seitenleiste)
+      else if (r.right + b + 20 < innerWidth) { top = Math.min(innerHeight - h - 16, Math.max(10, r.top)); left = r.right + 20; }
+      else { top = innerHeight - h - 16; left = innerWidth - b - 16; }
+      t.style.top = Math.max(10, top) + "px"; t.style.left = left + "px";
+    } else { t.style.top = "22%"; t.style.left = "calc(50% - 220px)"; }
+  }, 300);
+}
+async function rundgangEnde() {
+  const s = RG_SCHRITTE[RG.schritt]; if (s && s.nachher) s.nachher();
+  rgZuDialog(); personZu();
+  document.querySelectorAll(".tour-licht").forEach((e) => e.classList.remove("tour-licht"));
+  const t = document.getElementById("tour"); if (t) t.remove();
+  const v = RG.vorher; RG.vorher = null; RG.schritt = 0;
+  if (v) {
+    Object.assign(S, { ordner: v.ordner, wurzel: v.wurzel, beispiel: v.beispiel, ich: v.ich, ansicht: v.ansicht }); S.f = JSON.parse(v.f); merke("filter", v.f); if (v.ich) merke("ich", v.ich);
+    S.privat = null; S.pensen = null; S.vorlagen = null; S.eingang = null;
+    if (S.ordner && !v.beispiel) await allesLaden(); else if (v.beispiel) await beispielLaden(); else zeichnen();
+  }
+  if (location.hash === "#rundgang") history.replaceState(null, "", location.pathname);
+}
+document.addEventListener("mousedown", (e) => {
+  const g = e.target.closest && e.target.closest("#tour .griff"); if (!g || e.target.closest("button")) return;
+  const t = document.getElementById("tour"), r = t.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+  t.style.transition = "none";
+  const zieh = (m) => { t.style.left = Math.max(0, m.clientX - dx) + "px"; t.style.top = Math.max(0, m.clientY - dy) + "px"; };
+  const los = () => { document.removeEventListener("mousemove", zieh); document.removeEventListener("mouseup", los); t.style.transition = ""; };
+  document.addEventListener("mousemove", zieh); document.addEventListener("mouseup", los); e.preventDefault();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.getElementById("tour") && !$("#dlg").open) rundgangEnde(); });
+
 /* ====================== Start ====================== */
 (async function () {
   if (location.hash === "#beispiel") return beispielLaden();
+  if (location.hash === "#rundgang") return rundgangStart();
   try { if (await ordnerZugriff()) return allesLaden(); } catch (e) {}
   zeichnen();
 })();
