@@ -38,6 +38,22 @@ nav button.rechts { margin-left: auto; }
 .kacheln-start .aufg.an { border-color: var(--braun); box-shadow: 0 0 0 2px var(--sand2); }
 .kacheln-start .aufg.null { opacity: .45; cursor: default; }
 .kacheln-start .aufg .zahl { font-size: 26px; }
+.aufg .sym { display: none; }
+/* farbig (Admin) */
+.bunt .agruppen { display: grid; grid-template-columns: 5fr 3fr; gap: 14px; margin: 10px 0; }
+.bunt .agtitel { font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--leise); margin-bottom: 2px; }
+.bunt .kacheln-start { margin: 0; }
+.bunt .kacheln-start .aufg { border: 0; border-left: 6px solid var(--af); background: color-mix(in srgb, var(--af) 11%, #fff); min-width: 130px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,.08); transition: transform .1s; }
+.bunt .kacheln-start .aufg:hover { transform: translateY(-2px); }
+.bunt .kacheln-start .aufg .zahl { color: var(--af); font-weight: 700; }
+.bunt .kacheln-start .aufg .sym { display: inline; font-size: 18px; float: right; opacity: .85; }
+.bunt .kacheln-start .aufg.an { background: var(--af); color: #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--af) 45%, transparent); }
+.bunt .kacheln-start .aufg.an .zahl { color: #fff; }
+.bunt .kacheln-start .aufg.null { opacity: .4; background: #f6f4f0; border-left-color: #ccc; }
+.bunt .karte.aliste { border-top: 4px solid var(--af); }
+.bunt .karte.termine { border-top: 4px solid #e8a317; }
+.bunt .karte.termine tr td.tdatum { border-left: 5px solid var(--tf); padding-left: 8px; background: color-mix(in srgb, var(--tf) 9%, #fff); }
+@media (max-width: 800px) { .bunt .agruppen { grid-template-columns: 1fr; } }
 main { padding: 6px 20px 60px; max-width: 1500px; }
 button, .knopf { font: inherit; cursor: pointer; border: 1px solid #c9b791; background: #fff; color: var(--braun-dunkel); border-radius: 6px; padding: 4px 10px; }
 button.haupt { background: var(--braun); color: #fff; border-color: var(--braun); }
@@ -233,7 +249,6 @@ details > summary { cursor: pointer; margin: 6px 0; }
 <header>
   <div class="kopf1">
     <h1>Buchhaltung Sek II · Mathematik</h1>
-    <span class="marke">Entwurf</span>
     <span id="beispielMarke"></span>
     <div class="rechts">
       <button class="klein rgknopf" onclick="rundgangStart()" title="Rundgang mit Beispieldaten – nichts wird gespeichert">▶ Rundgang</button>
@@ -896,6 +911,9 @@ function willkommen() {
 }
 
 /* ---------- Start ---------- */
+/* Farben und Symbole der Aufgaben auf dem Start (Rike: etwas farbenfroher; für Admin) */
+const AUFG_STIL = { suchen: ["#d0453a", "🔎"], angefragt: ["#e8892b", "✉️"], avb: ["#c9a227", "📄"], vb: ["#2f7fc1", "🗣️"], ub: ["#16938f", "📅"], vorbei: ["#3c9a5a", "✓"], arbeiten: ["#5b5fd0", "✎"], archiv: ["#8a8a8a", "🗄️"] };
+const terminFarbe = (was) => (/Prüfungslektion/.test(was) ? "#d0453a" : /Vorbesprechung/.test(was) ? "#2f7fc1" : /Diplom/.test(was) ? "#7b4fa3" : "#e8a317");
 function vStart() {
   const sem = semHeute(), heute = heuteIso(), meine = S.f.nurMeine && S.ich;
   const alle = Object.values(D.praktika).filter((p) => D.studis[p.student] && !istArchiv(D.studis[p.student]));
@@ -921,13 +939,15 @@ function vStart() {
     ["archiv", "Fertig – ins Archiv?", Object.values(D.studis).filter((s) => !istArchiv(s) && alleFertig(s)), (s) => `<li><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span> <button class="klein" onclick="archivieren('${s.id}', true)">ins Archiv</button></li>`],
   ];
   const offen = aufgaben.find((x) => x[0] === S.f.startOffen && x[2].length);
-  return `<h2>Was ansteht</h2>
+  return `<div class="${istAdmin() ? "bunt" : ""}"><h2>Was ansteht</h2>
   <div class="leiste"><span class="gr"><span class="chip ${S.f.nurMeine ? "an" : ""}" onclick="filter('nurMeine', ${!S.f.nurMeine})">nur meine${S.ich ? " (" + esc(S.ich) + ")" : ""}</span></span><span class="leise klein">Semester ${sem}</span></div>
   ${!S.ich ? `<div class="warnung">Oben rechts «Ich bin» wählen.</div>` : ""}
   <div class="karte termine"><h3>${meine ? "Meine nächsten Termine" : "Nächste Termine"}</h3>
-    ${termine.length ? `<table>${termine.slice(0, 8).map((t) => { const x = D.pxl[t.p.pxl]; return `<tr class="klickbar" onclick="praktikumDialog('${t.p.id}')"><td style="white-space:nowrap;width:110px"><b>${wochentag(t.d)} ${datumKurz(t.d)}</b><br>${esc(t.z)}${t.bis ? "–" + esc(t.bis) : ""}</td><td><span class="link" onclick="event.stopPropagation(); personZeigen('${t.p.student}')">${esc(nameVon(D.studis[t.p.student]))}</span> · ${esc(t.was)}${(t.p.doz || []).length > 1 || (t.p.vertretung || []).length ? " " + dozMarken(t.p) : ""}<br><span class="mini">${esc([x && schuleKurz(x), t.ort].filter(Boolean).join(" · "))}</span></td></tr>`; }).join("")}</table>${termine.length > 8 ? `<p class="mini">… und ${termine.length - 8} weitere</p>` : ""}` : `<p class="leise">Keine Termine.</p>`}</div>
-  <div class="kacheln-start">${aufgaben.map(([k, t, l]) => `<div class="aufg ${l.length ? "" : "null"} ${offen && offen[0] === k ? "an" : ""}" ${l.length ? `onclick="filter('startOffen', '${offen && offen[0] === k ? "" : k}')"` : ""}><span class="zahl">${l.length}</span><br><span class="klein">${t}</span></div>`).join("")}</div>
-  ${offen ? `<div class="karte"><h3>${offen[1]}</h3><ul>${offen[2].map(offen[3]).join("")}</ul></div>` : `<p class="leise klein">Eine Kachel anklicken, um die Liste zu sehen.</p>`}`;
+    ${termine.length ? `<table>${termine.slice(0, 8).map((t) => { const x = D.pxl[t.p.pxl]; return `<tr class="klickbar" style="--tf:${terminFarbe(t.was)}" onclick="praktikumDialog('${t.p.id}')"><td class="tdatum" style="white-space:nowrap;width:110px"><b>${wochentag(t.d)} ${datumKurz(t.d)}</b><br>${esc(t.z)}${t.bis ? "–" + esc(t.bis) : ""}</td><td><span class="link" onclick="event.stopPropagation(); personZeigen('${t.p.student}')">${esc(nameVon(D.studis[t.p.student]))}</span> · ${esc(t.was)}${(t.p.doz || []).length > 1 || (t.p.vertretung || []).length ? " " + dozMarken(t.p) : ""}<br><span class="mini">${esc([x && schuleKurz(x), t.ort].filter(Boolean).join(" · "))}</span></td></tr>`; }).join("")}</table>${termine.length > 8 ? `<p class="mini">… und ${termine.length - 8} weitere</p>` : ""}` : `<p class="leise">Keine Termine.</p>`}</div>
+  ${(() => { const kachelA = ([k, t, l]) => `<div class="aufg ${l.length ? "" : "null"} ${offen && offen[0] === k ? "an" : ""}" style="--af:${AUFG_STIL[k][0]}" ${l.length ? `onclick="filter('startOffen', '${offen && offen[0] === k ? "" : k}')"` : ""}><span class="zahl">${l.length}</span> <span class="sym">${AUFG_STIL[k][1]}</span><br><span class="klein">${t}</span></div>`;
+    const gruppe = (titel, keys) => `<div class="agruppe"><div class="agtitel">${titel}</div><div class="kacheln-start">${aufgaben.filter((a) => keys.includes(a[0])).map(kachelA).join("")}</div></div>`;
+    return istAdmin() ? `<div class="agruppen">${gruppe("Organisieren", ["suchen", "angefragt", "avb", "vb", "ub"])}${gruppe("Abschliessen", ["vorbei", "arbeiten", "archiv"])}</div>` : `<div class="kacheln-start">${aufgaben.map(kachelA).join("")}</div>`; })()}
+  ${offen ? `<div class="karte aliste" style="--af:${AUFG_STIL[offen[0]][0]}"><h3>${AUFG_STIL[offen[0]][1]} ${offen[1]}</h3><ul>${offen[2].map(offen[3]).join("")}</ul></div>` : `<p class="leise klein">Eine Kachel anklicken, um die Liste zu sehen.</p>`}</div>`;
 }
 async function schnell(id, status) {
   const p = D.praktika[id], f = { status };
