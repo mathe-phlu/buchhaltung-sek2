@@ -69,6 +69,14 @@ tr.klickbar:hover td { background: #fbf8f1; cursor: pointer; }
 .filter input[type=search], .filter select { font-size: 14px; padding: 5px 6px; border: 1px solid #ccc; border-radius: 5px; min-width: 120px; }
 .filter input[type=search] { min-width: 200px; }
 .ffuss { font-size: 13px; padding-bottom: 6px; } .faktiv { color: var(--braun-dunkel); }
+tr.vorschlaege > td { background: #fbf8f1; padding: 8px 10px 4px; }
+.vkopf { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; }
+table.vtab { width: 100%; } table.vtab td, table.vtab th { padding: 3px 6px; font-size: 13px; vertical-align: top; }
+table.vtab tr.gesperrt td { opacity: .5; }
+.weg { display: inline-block; border-radius: 9px; padding: 0 8px; font-size: 12px; font-weight: 600; }
+.weg.w0 { background: #dcefdf; color: #2e6b3a; } .weg.w1 { background: #fff3c4; color: #7a6212; } .weg.w2 { background: #eee; color: #777; } .weg.w3 { background: #fbe0e3; color: #8a2b38; }
+.vstand { font-size: 12px; font-weight: 600; } .vstand.v-ja { color: #2e7a3c; } .vstand.v-nein { color: var(--achtung); }
+.warnung-klein { color: #8a5a00; }
 textarea.hinwfeld { width: 100%; min-width: 180px; min-height: 28px; font-size: 12.5px; padding: 3px 5px; resize: vertical; border-color: #e2dccd; background: #fffdf8; }
 td.frueher div { white-space: nowrap; line-height: 1.5; } .fsem { display: inline-block; min-width: 38px; color: #888; font-size: 11.5px; }
 .dozwahl { display: inline-block; border: 1.5px solid var(--f); color: var(--f); background: #fff; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 3px; line-height: 18px; user-select: none; }
@@ -1003,6 +1011,68 @@ async function verfSetzen(xid, sem, stand) {
   await eintragen({ typ: "aendern", art: "pxl", ref: xid, felder: { ["verfuegbar." + sem]: stand || alt.notiz ? Object.assign({}, alt, { stand }) : null } });
 }
 
+/* ---------- Weg: Kanton der Studierenden (aus Wohnort, korrigierbar) und Nachbarkantone ---------- */
+const KANTONE = ["LU", "ZG", "SZ", "NW", "OW", "UR", "AG", "ZH", "BE", "SO", "BL", "BS", "TG", "SG", "SH", "GL", "FR", "TI", "GR", "AR", "AI", "JU", "NE", "VD", "VS", "GE"];
+const ORTE = { luzern: "LU", horw: "LU", kriens: "LU", emmen: "LU", ebikon: "LU", sursee: "LU", hochdorf: "LU", willisau: "LU", beromünster: "LU", baldegg: "LU", root: "LU", meggen: "LU", weggis: "LU",
+  zug: "ZG", baar: "ZG", cham: "ZG", rotkreuz: "ZG", steinhausen: "ZG", risch: "ZG", schwyz: "SZ", brunnen: "SZ", einsiedeln: "SZ", küssnacht: "SZ", immensee: "SZ", pfäffikon: "SZ", lachen: "SZ", goldau: "SZ", ingenbohl: "SZ",
+  stans: "NW", sarnen: "OW", altdorf: "UR", erstfeld: "UR", aarau: "AG", baden: "AG", wettingen: "AG", wohlen: "AG", gränichen: "AG", muri: "AG", lenzburg: "AG", zofingen: "AG", brugg: "AG",
+  zürich: "ZH", winterthur: "ZH", wetzikon: "ZH", uster: "ZH", thalwil: "ZH", horgen: "ZH", affoltern: "ZH", dübendorf: "ZH", kloten: "ZH", bülach: "ZH", meilen: "ZH", wädenswil: "ZH",
+  bern: "BE", thun: "BE", biel: "BE", burgdorf: "BE", langenthal: "BE", solothurn: "SO", olten: "SO", grenchen: "SO", basel: "BS", liestal: "BL", weinfelden: "TG", frauenfeld: "TG", kreuzlingen: "TG",
+  "st. gallen": "SG", "st gallen": "SG", sargans: "SG", rapperswil: "SG", wil: "SG", schaffhausen: "SH", glarus: "GL", fribourg: "FR", freiburg: "FR", chur: "GR", lugano: "TI", bellinzona: "TI" };
+const NACHBARN = { LU: ["ZG", "SZ", "NW", "OW", "AG", "BE"], ZG: ["LU", "ZH", "SZ", "AG"], SZ: ["LU", "ZG", "ZH", "UR", "NW", "GL", "SG"], NW: ["LU", "OW", "UR", "SZ"], OW: ["LU", "NW", "BE"],
+  UR: ["SZ", "NW", "GL"], AG: ["LU", "ZG", "ZH", "SO", "BL", "BE"], ZH: ["ZG", "AG", "SZ", "SG", "TG", "SH"], BE: ["LU", "SO", "AG", "FR", "OW"], SO: ["BE", "AG", "BL"], BL: ["BS", "AG", "SO"], BS: ["BL"],
+  TG: ["ZH", "SG", "SH"], SG: ["ZH", "TG", "SZ", "GL", "AR"], SH: ["ZH", "TG"], GL: ["SZ", "SG", "UR"] };
+function kantonVon(s) {
+  if (!s) return "";
+  if (s.kanton) return s.kanton;
+  const t = String(s.wohnort || "").toLowerCase(), k = (s.wohnort || "").match(/\b([A-Z]{2})\b/);
+  if (k && KANTONE.includes(k[1])) return k[1];
+  for (const [ort, kt] of Object.entries(ORTE)) if (t.includes(ort)) return kt;
+  if (/^\d{4}/.test(t)) { const plz = Number(t.slice(0, 4)); if (plz >= 8000 && plz < 8800) return "ZH"; if (plz >= 6000 && plz < 6300) return "LU"; }
+  return "";
+}
+function wegStufe(s, x) {
+  const a = kantonVon(s), b = x && x.kanton;
+  if (!a || !b) return { stufe: 2, text: "?", titel: "Kanton der Person unbekannt – unter «Angaben ändern» eintragen" };
+  if (a === b) return { stufe: 0, text: "nah", titel: `beide ${a}` };
+  if ((NACHBARN[a] || []).includes(b)) return { stufe: 1, text: "mittel", titel: `${a} → ${b} (Nachbarkanton)` };
+  return { stufe: 3, text: "weit", titel: `${a} → ${b}` };
+}
+/* Vorschläge für ein offenes Praktikum: passt die Schule? verfügbar? schon belegt? Weg? lange nichts bekommen? Entscheiden tut Christof. */
+function vorschlaege(p, sem) {
+  const s = D.studis[p.student], sj = sjVon(sem), semsJahr = semsVonSj(sj);
+  const vorher = new Set(praktikaVon(p.student).filter((q) => q.id !== p.id).map((q) => q.pxl));
+  return Object.values(D.pxl).map((x) => {
+    const v = verfVon(x, sem).stand || "", nicht = passtNicht(x, p);
+    const andere = Object.values(D.praktika).filter((q) => q.pxl === x.id && q.id !== p.id && ART[q.art].praktikum);
+    const imSem = andere.filter((q) => q.semester === sem), imSj = andere.filter((q) => semsJahr.includes(q.semester) && q.semester !== sem);
+    const letzte = andere.filter((q) => q.semester && semKey(q.semester) < semKey(sem)).sort((a, b) => semKey(b.semester) - semKey(a.semester))[0];
+    // auch die alten Betreuungs-Spalten der Excel-Liste zählen
+    const exSem = (x.betreuungen || []).map((b) => b.semester).filter((b) => semKey(b) < semKey(sem)).sort((a, b) => semKey(b) - semKey(a))[0];
+    const zuletzt = [letzte && letzte.semester, exSem].filter(Boolean).sort((a, b) => semKey(b) - semKey(a))[0] || "";
+    const seit = zuletzt ? semKey(sem) - semKey(zuletzt) : 8;
+    const weg = wegStufe(s, x);
+    const sperre = nicht || (v === "nein" ? "sagt für " + sem + " nein" : "") || (imSem.length ? "hat in " + sem + " schon: " + imSem.map((q) => q.art + " " + D.studis[q.student].name).join(", ") : "");
+    const punkte = (sperre ? 100 : 0) + ({ ja: 0, vielleicht: 4, angefragt: 4, "": 6 }[v] ?? 6) + weg.stufe * 3 + (imSj.length ? 6 : 0) + (vorher.has(x.id) ? 8 : 0) - Math.min(seit, 6);
+    return { x, v, nicht, sperre, imSj, zuletzt, seit, weg, punkte, vorher: vorher.has(x.id) };
+  }).sort((a, b) => a.punkte - b.punkte || a.x.name.localeCompare(b.x.name));
+}
+function vorschlagHtml(p, sem, darf) {
+  const l = vorschlaege(p, sem), alle = S.f.vorschlagAlle === p.id, zeigen = alle ? l : l.filter((r) => !r.sperre).slice(0, 8);
+  const s = D.studis[p.student];
+  return `<tr class="vorschlaege"><td colspan="6"><div class="vkopf"><b>Vorschläge für ${esc(nameVon(s))} · ${p.art} ${sem}</b> <span class="mini">wohnt ${esc(s.wohnort || "?")} · Kanton ${kantonVon(s) ? `<b>${kantonVon(s)}</b>` : `<select onchange="kantonSetzen('${s.id}', this.value)"><option value="">? wählen</option>${KANTONE.map((k) => `<option>${k}</option>`).join("")}</select>`}${p.wunsch ? " · Wunsch: " + esc(p.wunsch) : ""}</span>
+    <span class="mini" style="margin-left:auto">Reihenfolge: verfügbar, Weg, im Studienjahr noch frei, lange nichts bekommen – entscheiden tust du</span></div>
+    <table class="vtab"><tr><th>Praxislehrperson</th><th>Verfügbar ${sem}</th><th>Weg</th><th>Zuletzt betreut</th><th>Hinweise</th><th></th></tr>
+    ${zeigen.map((r) => `<tr class="${r.sperre ? "gesperrt" : ""}"><td><span class="link" onclick="pxlDialog('${r.x.id}')"><b>${esc(r.x.name)}</b> ${esc(r.x.vorname)}</span><div class="mini">${esc(schuleKurz(r.x))} (${esc(r.x.kanton)}) · ${esc(r.x.schultyp)}</div></td>
+      <td>${r.v ? `<span class="vstand v-${r.v}">${esc(r.v)}</span>` : `<span class="leise">?</span>`}${verfVon(r.x, sem).notiz ? `<div class="mini">${esc(verfVon(r.x, sem).notiz)}</div>` : ""}</td>
+      <td><span class="weg w${r.weg.stufe}" title="${esc(r.weg.titel)}">${r.weg.text}</span></td>
+      <td class="klein">${r.zuletzt ? esc(r.zuletzt) + (r.seit >= 4 ? ` <span class="ok" title="lange nichts mehr">· wartet</span>` : "") : `<span class="ok">noch nie</span>`}</td>
+      <td class="klein">${[r.sperre && `<b class="nein">✗ ${esc(r.sperre)}</b>`, r.imSj.length && `<span class="warnung-klein">im Studienjahr schon ${r.imSj.map((q) => q.art + " " + q.semester).join(", ")} – nur im Notfall</span>`, r.vorher && "war schon PxL dieser Person", r.x.hinweise && esc(r.x.hinweise)].filter(Boolean).join("<br>")}</td>
+      <td>${darf ? `<button class="klein ${r.sperre ? "" : "haupt"}" onclick="pxlSetzen('${p.id}','${r.x.id}')">${p.pxl === r.x.id ? "✓ gewählt" : "anfragen"}</button>` : ""}</td></tr>`).join("")}</table>
+    <p class="mini"><span class="link" onclick="filter('vorschlagAlle', '${alle ? "" : p.id}')">${alle ? "nur die passenden zeigen" : `alle ${l.length} zeigen (auch gesperrte)`}</span></p></td></tr>`;
+}
+async function kantonSetzen(sid, k) { if (k) await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { kanton: k } }); }
+
 /* ---------- Zuteilung ---------- */
 function vZuteilung() {
   const sem = S.f.zuSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 1);
@@ -1025,11 +1095,11 @@ function vZuteilung() {
   };
   const zeile = (p) => {
     const s = D.studis[p.student], x = D.pxl[p.pxl];
-    return `<tr><td><span class="link" onclick="personZeigen('${s.id}')"><b>${esc(s.name)}</b> ${esc(s.vorname)}</span><div class="mini">${esc([s.profil, s.wohnort && "wohnt " + s.wohnort, s.pensum].filter(Boolean).join(" · "))}</div></td>
+    return `<tr><td><span class="link" onclick="personZeigen('${s.id}')"><b>${esc(s.name)}</b> ${esc(s.vorname)}</span><div class="mini">${esc([s.profil, s.wohnort && "wohnt " + s.wohnort + (kantonVon(s) ? " (" + kantonVon(s) + ")" : ""), s.pensum].filter(Boolean).join(" · "))}</div></td>
     <td><span class="link" onclick="praktikumDialog('${p.id}')">${p.art}</span><div class="mini">${esc(umfangKurz(p))}${p.umfangNotiz ? ` <span title="${esc(p.umfangNotiz)}">ⓘ</span>` : ""}</div>${p.art === "BP" && bpHinweis(p) ? `<div class="mini"><b>${esc(bpHinweis(p))}</b></div>` : ""}</td>
     <td class="klein">${esc(p.wunsch || "")}</td>
     <td style="white-space:nowrap">${darf ? dozPillen("z_" + p.id, p.doz, "dozSetzen('" + p.id + "', this.dataset.k, !this.classList.contains('an'))") : dozMarken(p)}</td>
-    <td><select class="pxl" ${darf ? "" : "disabled"} onchange="pxlSetzen('${p.id}', this.value)">${optionen(p)}</select>${p.pxlText && !p.pxl ? `<div class="mini">Excel: ${esc(p.pxlText)}</div>` : ""}${x && passtNicht(x, p) ? `<div class="mini nein">⚠ ${esc(passtNicht(x, p))}</div>` : ""}</td>
+    <td><button class="klein ${S.f.vorschlag === p.id ? "haupt" : ""}" onclick="filter('vorschlag', '${S.f.vorschlag === p.id ? "" : p.id}')">${S.f.vorschlag === p.id ? "Vorschläge ▴" : "Vorschläge ▾"}</button> <select class="pxl" ${darf ? "" : "disabled"} onchange="pxlSetzen('${p.id}', this.value)">${optionen(p)}</select>${p.pxlText && !p.pxl ? `<div class="mini">Excel: ${esc(p.pxlText)}</div>` : ""}${x && passtNicht(x, p) ? `<div class="mini nein">⚠ ${esc(passtNicht(x, p))}</div>` : ""}</td>
     <td><span class="punkt st-${statusInfo(p)[2]}"></span>${esc(statusInfo(p)[1])}<div style="margin-top:3px">${darf ? `${p.status !== "angefragt" && x ? `<button class="klein" onclick="schnell('${p.id}','angefragt')">angefragt</button> ` : ""}${x ? `<button class="klein" onclick="schnell('${p.id}','zusage')">Zusage ✓</button> <a class="klein link" href="${mailAnfrage(p)}">✉ Entwurf</a>` : ""}` : ""}</div></td></tr>`;
   };
   return `<h2>Zuteilung</h2>
@@ -1040,7 +1110,7 @@ function vZuteilung() {
   <div class="karte"><b>${sem}</b> · ${pr.filter((p) => ART[p.art].praktikum).length} Praktika, ${pr.filter((p) => !ART[p.art].praktikum).length} Arbeiten<div class="mini">${STATUS_P.map((st) => [st, pr.filter((p) => ART[p.art].praktikum && p.status === st[0]).length]).filter((x) => x[1]).map(([st, n]) => `<span class="punkt st-${st[2]}"></span>${n} ${st[1]}`).join("<br>")}</div></div>
   </div>
   <h3>Noch ohne Zusage (${offen.length})</h3>
-  ${offen.length ? `<table class="zuteilung"><thead><tr><th>Studierende</th><th>Art</th><th>Wunsch</th><th>Doz</th><th>Praxislehrperson <span class="leise klein">(✓ verfügbar zuerst, ✗ passt nicht)</span></th><th>Stand</th></tr></thead><tbody>${offen.map(zeile).join("")}</tbody></table>` : `<p class="leise">Für ${sem} ist alles zugeteilt.</p>`}
+  ${offen.length ? `<table class="zuteilung"><thead><tr><th>Studierende</th><th>Art</th><th>Wunsch</th><th>Doz</th><th>Praxislehrperson <span class="leise klein">(✓ verfügbar zuerst, ✗ passt nicht)</span></th><th>Stand</th></tr></thead><tbody>${offen.map((p) => zeile(p) + (S.f.vorschlag === p.id ? vorschlagHtml(p, sem, darf) : "")).join("")}</tbody></table>` : `<p class="leise">Für ${sem} ist alles zugeteilt.</p>`}
   <details><summary><h3 style="display:inline">Schon zugeteilt in ${sem} (${pr.filter((p) => !offen.includes(p)).length})</h3></summary>
   <table><thead><tr><th>Studierende</th><th>Art</th><th>Doz</th><th>PxL</th><th>UB</th><th>Stand</th></tr></thead><tbody>
   ${pr.filter((p) => !offen.includes(p)).sort((a, b) => ARTEN.findIndex((x) => x.k === a.art) - ARTEN.findIndex((x) => x.k === b.art)).map((p) => `<tr class="klickbar" onclick="praktikumDialog('${p.id}')"><td>${esc(nameVon(D.studis[p.student]))}</td><td>${p.art}</td><td>${dozMarken(p)}</td><td>${esc(D.pxl[p.pxl] ? pxlKurz(D.pxl[p.pxl]) + " · " + schuleKurz(D.pxl[p.pxl]) : p.thema || p.pxlText || "")}</td><td>${ubText(p)}</td><td><span class="punkt st-${statusInfo(p)[2]}"></span>${esc(statusInfo(p)[1])} ${avbLink(p)}</td></tr>`).join("")}</tbody></table></details>
@@ -1704,7 +1774,7 @@ function studiDialog(id) {
     ${s.profilText ? `<label></label><span class="klein leise">Excel: ${esc(s.profilText)}</span>` : ""}
     ${auswahl("s_wahl", "Wahlpflichtbereich", wahlVon(s), WAHL)}
     <label></label><span class="mini">Berufspädagogik erlaubt die Synergie im BP (Teil an BMS/Berufsfachschule, nur Mono- und Erstfach); Additum inkl. PA nur Erst- und Zweitfach.</span>
-    ${feld("s_faecher", "Fächer", s.faecher)}${feld("s_pensum", "Pensum", s.pensum, "text", 'placeholder="Vollzeit / Teilzeit (arbeitet 60%)"')}${feld("s_wohnort", "Wohnort", s.wohnort)}${feld("s_mail", "E-Mail", s.mail, "email")}
+    ${feld("s_faecher", "Fächer", s.faecher)}${feld("s_pensum", "Pensum", s.pensum, "text", 'placeholder="Vollzeit / Teilzeit (arbeitet 60%)"')}${feld("s_wohnort", "Wohnort", s.wohnort)}${auswahl("s_kanton", "Kanton (für den Weg)", s.kanton || "", [["", kantonVon(Object.assign({}, s, { kanton: "" })) ? "automatisch: " + kantonVon(Object.assign({}, s, { kanton: "" })) : "?"], ...KANTONE.map((k) => [k, k])])}${feld("s_mail", "E-Mail", s.mail, "email")}
     ${feld("s_abschluss", "Abschluss geplant", s.abschluss)}${auswahl("s_stand", "Stand", s.stand, STAND_STUDI)}
     <label class="voll">Bemerkungen</label><textarea class="voll" id="s_bemerkung">${esc(s.bemerkung || "")}</textarea></div>
     ${id ? verlaufHtml("studi", id) : ""}`;
@@ -1712,7 +1782,7 @@ function studiDialog(id) {
 }
 async function studiSpeichern(id) {
   const v = (k) => $("#s_" + k).value.trim();
-  const neu = { name: v("name"), vorname: v("vorname"), start: semNorm(v("start")) || v("start").replace(/\s/g, "").toUpperCase(), profil: v("profil"), wahl: v("wahl"), wpb: v("wahl") === "BPAED", faecher: v("faecher"), pensum: v("pensum"), wohnort: v("wohnort"), mail: v("mail"), abschluss: v("abschluss"), stand: v("stand"), bemerkung: v("bemerkung") };
+  const neu = { name: v("name"), vorname: v("vorname"), start: semNorm(v("start")) || v("start").replace(/\s/g, "").toUpperCase(), profil: v("profil"), wahl: v("wahl"), wpb: v("wahl") === "BPAED", faecher: v("faecher"), pensum: v("pensum"), wohnort: v("wohnort"), kanton: v("kanton"), mail: v("mail"), abschluss: v("abschluss"), stand: v("stand"), bemerkung: v("bemerkung") };
   if (!neu.name) return meldung("Bitte einen Namen eintragen.");
   if (id) { const f = unterschiede(D.studis[id], neu); if (Object.keys(f).length && !(await eintragen({ typ: "aendern", art: "studi", ref: id, felder: f }))) return; $("#dlg").close(); }
   else {
