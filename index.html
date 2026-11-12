@@ -69,7 +69,12 @@ tr.klickbar:hover td { background: #fbf8f1; cursor: pointer; }
 .kachel .hinwknopf { color: #8a6a2a; font-weight: 700; }
 .kachel .hinwblock { display: none; border-top: 1px dotted rgba(0,0,0,.2); margin-top: 3px; padding-top: 2px; }
 .kachel.hinwoffen .hinwblock { display: block; }
-.kachel .stand { color: #555; font-size: 11.5px; }
+.kachel .stand { font-size: 11px; }
+.kachel .stand .sp { display: inline-block; background: rgba(255,255,255,.8); border: 1px solid rgba(0,0,0,.18); border-radius: 9px; padding: 0 7px; line-height: 13px; color: #333; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+#hinwpop { position: absolute; z-index: 60; max-width: 300px; background: #fffdf3; border: 1px solid #d8c890; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.2); padding: 6px 10px; font-size: 12.5px; color: #4a3a1a; }
+#hinwpop div { margin: 2px 0; }
+input.autohaken { outline: 2px solid #9cc3e8; outline-offset: 1px; }
+.modliste { font-size: 12.5px; } .modliste td { padding: 2px 8px 2px 0; vertical-align: top; } .modliste .mc { color: var(--leise); white-space: nowrap; }
 .kachel .kz.thema, .gross .kachel .kz.thema { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.7em; }
 .kachel .k1 { height: 1.35em; align-items: center; overflow: visible; }
 .kachel .k1 .dozm { line-height: 14px; }
@@ -945,13 +950,21 @@ function studisGefiltert() {
   }).sort((a, b) => semKey(a.start) - semKey(b.start) || a.name.localeCompare(b.name));
 }
 /* Hinweise nur als ⓘ in der Kopfzeile – Klick blendet sie ein (Kästchen bleiben gleich gross) */
-const hinwKnopf = (p) => (hinweisListe(p).length ? `<span class="hinwknopf" title="${esc(hinweisListe(p).join("\n"))}" onclick="event.stopPropagation(); this.closest('.kachel').classList.toggle('hinwoffen')">ⓘ</span>` : "");
+const hinwKnopf = (p) => (hinweisListe(p).length ? `<span class="hinwknopf" title="${esc(hinweisListe(p).join("\n"))}" onclick="event.stopPropagation(); hinwZeigen(this)">ⓘ</span>` : "");
+function hinwZeigen(el) {
+  let pop = document.getElementById("hinwpop"); if (pop && pop.dataset.von === el.title) return pop.remove();
+  if (pop) pop.remove(); pop = document.createElement("div"); pop.id = "hinwpop"; pop.dataset.von = el.title;
+  pop.innerHTML = el.title.split("\n").map((h) => `<div>ⓘ ${esc(h)}</div>`).join("");
+  document.body.appendChild(pop); const r = el.getBoundingClientRect();
+  pop.style.top = (r.bottom + scrollY + 4) + "px"; pop.style.left = Math.max(8, Math.min(innerWidth - pop.offsetWidth - 8, r.left + scrollX - 10)) + "px";
+}
+document.addEventListener("click", (e) => { const pop = document.getElementById("hinwpop"); if (pop && !e.target.closest(".hinwknopf")) pop.remove(); });
 const hinwBlock = (p) => (hinweisListe(p).length ? `<div class="hinwblock">${hinweisListe(p).map((h) => `<div class="hinw">ⓘ ${esc(h)}</div>`).join("")}</div>` : "");
 /* 📄 oben rechts: AVB direkt öffnen (bei mehreren: Zahl) */
 const avbIcon = (p) => (p.avbDatei ? `<span class="avbicon" title="AVB öffnen: ${esc(p.avbDatei)}${(p.avbWeitere || []).length ? "\n+ " + p.avbWeitere.map((w) => w.titel).join(", ") + " (im Praktikum)" : ""}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.avbDatei))})">📄${(p.avbWeitere || []).length ? `<sup>${1 + p.avbWeitere.length}</sup>` : ""}</span>` : "");
 function kachel(p) {
   // angerechnet (Vorleistung): erübrigt sich – nur ein graues Feld, ohne Doz, Semester, Umfang
-  if (p.status === "angerechnet") return `<div class="kachel st-na anger" onclick="praktikumDialog('${p.id}')" title="angerechnet (Vorleistung) – zum Ändern anklicken"><div class="kz k1"><span>⊕ angerechnet</span>${hinwKnopf(p)}</div><div class="kz">Vorleistung</div>${hinwBlock(p)}</div>`;
+  if (p.status === "angerechnet") return `<div class="kachel st-na anger" onclick="praktikumDialog('${p.id}')" title="angerechnet (Vorleistung) – zum Ändern anklicken"><div class="kz k1"><span>⊕ angerechnet</span>${hinwKnopf(p)}</div><div class="kz">Vorleistung</div></div>`;
   const si = statusInfo(p), x = D.pxl[p.pxl], fertig = erledigt(p);
   const ab = (S.f.sem && p.semester !== S.f.sem) || (S.f.doz && !(S.f.doz === "beide" ? (p.doz || []).length > 1 : beteiligt(p, S.f.doz)));
   const z = (inhalt, cls = "", titel = "") => `<div class="kz ${cls}" ${titel ? `title="${esc(titel)}"` : ""}>${inhalt}</div>`;
@@ -962,7 +975,7 @@ function kachel(p) {
     if (x) { zeilen.push(z(esc(pxlKurz(x)), "", [pxlKurz(x), x.mail].filter(Boolean).join("\n"))); zeilen.push(z(esc(schuleKurz(x)), "leise", schuleKurz(x))); }
     else if (p.pxlText) { zeilen.push(z(esc(p.pxlText), "", "nicht in der PxL-Liste")); zeilen.push(p.pxlOrt ? z(esc(p.pxlOrt), "leise") : leer()); }
     else { zeilen.push(z(fertig ? "&nbsp;" : "PxL offen", "leise")); zeilen.push(leer()); }
-    zeilen.push(z(esc(si[1]), "stand", si[1]));
+    zeilen.push(z(`<span class="sp">${esc(si[1])}</span>`, "stand", si[1]));
     // klar abgetrennt: Besuch
     let besuch;
     if (p.ub) besuch = `${p.art === "PP" ? "Prüfung" : "UB"} ${wochentag(p.ub)} ${datumKurz(p.ub)}${p.ubZeit ? ", " + esc(p.ubZeit) : ""}`;
@@ -977,17 +990,17 @@ function kachel(p) {
       zeilen.push(z(p.datum ? `${wochentag(p.datum)} ${datumKurz(p.datum)}` : `<span class="leise">Termin offen</span>`));
       zeilen.push(z(p.datum ? esc(dpTermin(p)) : "&nbsp;", "leise"));
       zeilen.push(p.nachpruefung ? z("Nachprüfung", "leise") : leer());
-      zeilen.push(z(esc(si[1]), "stand besuch", si[1]));
+      zeilen.push(z(`<span class="sp">${esc(si[1])}</span>`, "stand besuch", si[1]));
     } else {
       // Arbeiten: Thema (2 Zeilen Platz) · Stand · Abgabe – gleich hoch wie die Praktika
       zeilen.push(z(p.thema ? esc(p.thema) : `<span class="leise">Thema offen</span>`, "thema", p.thema || ""));
-      zeilen.push(z(esc(si[1]), "stand", si[1]));
+      zeilen.push(z(`<span class="sp">${esc(si[1])}</span>`, "stand", si[1]));
       zeilen.push(z(fertig ? `<span class="leise">abgeschlossen</span>` : p.abgabe ? `Abgabe ${esc(abgabeText(p.abgabe))}` : `<span class="leise">Abgabe offen</span>`, "besuch"));
     }
   }
   const bx = D.pxl[p.bmsPxl];
-  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L</span><span class="kicons">${p.bmsAvbDatei ? `<span class="avbicon" title="AVB BMS öffnen: ${esc(p.bmsAvbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.bmsAvbDatei))})">📄</span>` : ""}</span></div><div class="kz">${bx ? esc(pxlKurz(bx)) : "&nbsp;"}</div><div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz stand">selbst organisiert</div><div class="kz besuch leise">kein Besuch</div></div>` : "";
-  return `<div class="kachel st-${si[2]}" style="${ab ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')">${kopf}${zeilen.join("")}${hinwBlock(p)}</div>${bmsKachel}`;
+  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L</span><span class="kicons">${p.bmsAvbDatei ? `<span class="avbicon" title="AVB BMS öffnen: ${esc(p.bmsAvbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.bmsAvbDatei))})">📄</span>` : ""}</span></div><div class="kz">${bx ? esc(pxlKurz(bx)) : "&nbsp;"}</div><div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz stand"><span class="sp">selbst organisiert</span></div><div class="kz besuch leise">kein Besuch</div></div>` : "";
+  return `<div class="kachel st-${si[2]}" style="${ab ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')">${kopf}${zeilen.join("")}</div>${bmsKachel}`;
 }
 function vVerlaeufe() {
   const liste = studisGefiltert(), sems = semesterListe();
@@ -1449,8 +1462,9 @@ function formulareHtml(sj) {
 
 /* ---------- Module je Semester und Snapshot für das Sekretariat ---------- */
 const MODULE_STD = {
-  HS: [["MA01.01", "Fundamentum 1"], ["MA01.03", "Vertiefung 1"], ["MA01.05", "Projektarbeit"], ["MA10.01", "Spezialisierung 1 (5 ECTS)"], ["MA10.03", "Spezialisierung (10 ECTS)"]],
-  FS: [["MA01.02", "Fundamentum 2"], ["MA01.04", "Vertiefung 2"], ["MA01.05", "Projektarbeit"], ["MA10.02", "Spezialisierung 2 (5 ECTS)"], ["MA10.03", "Spezialisierung (10 ECTS)"]],
+  // Vertiefungsarbeit (IVA): einmal 10 ECTS oder zweimal 5 ECTS – darum beide 5er in jedem Semester (Rike, 12.11.)
+  HS: [["MA01.01", "Fundamentum 1"], ["MA01.03", "Vertiefung 1"], ["MA01.05", "Projektarbeit"], ["MA10.01", "Spezialisierung 1 (5 ECTS)"], ["MA10.02", "Spezialisierung 2 (5 ECTS)"], ["MA10.03", "Spezialisierung (10 ECTS)"]],
+  FS: [["MA01.02", "Fundamentum 2"], ["MA01.04", "Vertiefung 2"], ["MA01.05", "Projektarbeit"], ["MA10.01", "Spezialisierung 1 (5 ECTS)"], ["MA10.02", "Spezialisierung 2 (5 ECTS)"], ["MA10.03", "Spezialisierung (10 ECTS)"]],
 };
 const PK = { Monofach: "PK51", Erstfach: "PK52", Zweitfach: "PK53", Zusatzfach: "PK54" };
 const semCode = (sem) => (sem || "").replace(/^HS/, "H").replace(/^FS/, "F");
@@ -1465,23 +1479,29 @@ function autoModule(s, sem) {
   }
   return m;
 }
-function moduleVon(s, sem) { return new Set([...((s.module || {})[sem] || []), ...Object.keys(autoModule(s, sem))]); }
+// automatisch aus PA/IVA – lässt sich abwählen (Feld moduleAus.<Semester>)
+function moduleVon(s, sem) { const aus = new Set((s.moduleAus || {})[sem] || []); return new Set([...((s.module || {})[sem] || []), ...Object.keys(autoModule(s, sem)).filter((c) => !aus.has(c))]); }
+async function modulAutoSetzen(sid, sem, code, an) {
+  const s = D.studis[sid], l = new Set((s.moduleAus || {})[sem] || []); an ? l.delete(code) : l.add(code);
+  await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { ["moduleAus." + sem]: l.size ? [...l] : null } });
+}
 async function modulSetzen(sid, sem, code, an) {
   const s = D.studis[sid], l = new Set((s.module || {})[sem] || []); an ? l.add(code) : l.delete(code);
   await eintragen({ typ: "aendern", art: "studi", ref: sid, felder: { ["module." + sem]: [...l] } });
 }
 function vSnapshot() {
-  const sem = S.f.snapSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 2 && semKey(x) <= semKey(semHeute()) + 1);
+  const sem = S.f.snapSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) <= semKey(semHeute()) + 1).reverse();
   const mods = (D.einst.module || MODULE_STD)[sem.slice(0, 2)] || [];
   const studis = Object.values(D.studis).filter((s) => !istArchiv(s) || moduleVon(s, sem).size).sort((a, b) => semKey(a.start) - semKey(b.start) || a.name.localeCompare(b.name));
-  return `<div class="leiste"><span class="gr">Semester ${sems.map((x) => `<span class="chip ${x === sem ? "an" : ""}" onclick="filter('snapSem','${x}')">${x}</span>`).join("")}</span>
+  return `<div class="leiste"><span class="gr">Semester <select onchange="filter('snapSem', this.value)">${sems.map((x) => `<option value="${x}" ${x === sem ? "selected" : ""}>${x}${x === semHeute() ? " (aktuell)" : ""}</option>`).join("")}</select></span>
   <button class="haupt" onclick="snapshotDrucken('${sem}')">📄 Snapshot ${semCode(sem)} als PDF</button>
   <span class="leise klein">Druckfenster öffnet sich – dort «Als PDF sichern».</span></div>
-  <h3>Module ${sem} <span class="leise klein" style="font-family:inherit">– wer ist eingeschrieben? (✓ grau = aus Projekt-/Wahlpflichtarbeit)</span></h3>
+  <h3>Module ${sem} <span class="leise klein" style="font-family:inherit">– wer ist eingeschrieben?</span></h3>
   <table class="lekttab studliste"><tr><th>Name</th><th>Beginn</th><th>Profil</th>${mods.map(([c, t]) => `<th title="${esc(t)}">${c}<div class="mini">${esc(t)}</div></th>`).join("")}</tr>
   ${studis.map((s) => { const auto = autoModule(s, sem), man = new Set((s.module || {})[sem] || []);
     return `<tr><td><span class="link" onclick="personZeigen('${s.id}')">${esc(nameVon(s))}</span></td><td class="leise">${esc(s.start || "")}</td><td class="klein">${esc(s.profil || "")}${wahlVon(s) ? ` <span class="leise">· ${esc((WAHL.find((w) => w[0] === wahlVon(s)) || [, ""])[1].split(" ")[0])}</span>` : ""}</td>
-    ${mods.map(([c]) => `<td style="text-align:center">${auto[c] ? `<span class="leise" title="aus ${auto[c].art}">✓</span>` : `<input type="checkbox" ${man.has(c) ? "checked" : ""} onchange="modulSetzen('${s.id}','${sem}','${c}',this.checked)">`}</td>`).join("")}</tr>`; }).join("")}</table>`;
+    ${mods.map(([c]) => `<td style="text-align:center">${auto[c] && !man.has(c) ? `<input type="checkbox" class="autohaken" title="vorgeschlagen aus ${auto[c].art} ${esc(sem)} – abwählbar" ${moduleVon(s, sem).has(c) ? "checked" : ""} onchange="modulAutoSetzen('${s.id}','${sem}','${c}',this.checked)">` : `<input type="checkbox" ${man.has(c) ? "checked" : ""} onchange="modulSetzen('${s.id}','${sem}','${c}',this.checked)">`}</td>`).join("")}</tr>`; }).join("")}</table>
+  <p class="leise klein">Jedes Häkchen wird sofort gespeichert. Hellblau umrandet = vorgeschlagen aus Projekt-/Vertiefungsarbeit im Semester (abwählbar).</p>`;
 }
 function snapshotHtml(sem) {
   const vs = vorSem(sem), mods = (D.einst.module || MODULE_STD)[sem.slice(0, 2)] || [];
@@ -1804,7 +1824,7 @@ function personZeichnen() {
   const spalteFeld = (k) => {
     const da = pl.filter((p) => p.art === k);
     if (da.length) return da.map(baustein).join("");
-    if (k === "IVA" && !anwendbar(s, k)) return "";   // Berufspädagogik / Additum: keine IVA
+    // immer alle sechs Felder; erübrigt sich etwas (z.B. IVA bei Berufspädagogik): grau mit Grund
     return `<div class="gross"><div class="gtitel">${esc(ART[k].name)}</div>${anwendbar(s, k) ? `<div class="kachel plusfeld" onclick="praktikumNeu('${s.id}','${k}')">＋ ${k} anlegen</div>` : `<div class="kachel st-na">${esc(entfallGrund(s, k))}</div>`}</div>`;
   };
   const notizen = (D.notizen[s.id] || []).slice().reverse();
@@ -1820,6 +1840,7 @@ function personZeichnen() {
       <div class="vspalte">${["PA", "IVA", "DP"].map((k) => spalteFeld(k)).join("")}</div></div>
     ${!pl.length ? `<p class="leise">Noch nichts eingetragen.</p>` : ""}
     ${!istArchiv(s) ? `<p><button class="klein" title="z.B. ein zusätzliches Praktikum" onclick="praktikumNeu('${s.id}','BP')">＋ weiteres Praktikum</button></p>` : ""}
+    ${moduleHtml(s)}
     <h3>Bemerkungen <button class="klein" style="font-family:inherit;vertical-align:middle" onclick="const b=$('#bemBox'); b.hidden=!b.hidden; if(!b.hidden) $('#neueBemerkung').focus()">＋ neu</button></h3>
     <div id="bemBox" hidden><textarea id="neueBemerkung" rows="2" placeholder="Bemerkung zu ${esc(s.vorname || s.name)} …"></textarea>
     <p style="margin:4px 0"><button class="haupt klein" onclick="bemerkungSpeichern('${s.id}')">speichern</button></p></div>
@@ -1828,6 +1849,12 @@ function personZeichnen() {
     ${!notizen.length && !s.bemerkung ? `<p class="leise klein">Noch keine.</p>` : ""}
     ${verlaufHtml("studi", s.id)}
   </div>`;
+}
+/* Module der Person je Semester (aus den Meldungen bzw. Snapshots) – nur in der Seitenleiste, nicht im Raster */
+function moduleHtml(s) {
+  const namen = Object.fromEntries(Object.values(MODULE_STD).flat()), sems = new Set([...Object.keys(s.module || {}), ...praktikaVon(s.id).filter((p) => ["PA", "IVA"].includes(p.art) && p.semester).map((p) => p.semester)]);
+  const zeilen = [...sems].sort((a, b) => semKey(a) - semKey(b)).map((sem) => [sem, [...moduleVon(s, sem)].sort()]).filter(([, l]) => l.length);
+  return `<h3>Module</h3>${zeilen.length ? `<table class="modliste">${zeilen.map(([sem, l]) => `<tr><td><b>${sem}</b></td><td>${l.map((c) => `<span class="mc">${c}</span> ${esc(namen[c] || "")}`).join("<br>")}</td></tr>`).join("")}</table>` : `<p class="leise klein">Noch keine erfasst (Meldungen › Snapshot).</p>`}`;
 }
 function apWaehlen(sid) { const i = document.createElement("input"); i.type = "file"; i.accept = ".pdf,.docx"; i.onchange = () => i.files[0] && apHochladen(sid, i.files[0]); i.click(); }
 async function apHochladen(sid, datei) {
