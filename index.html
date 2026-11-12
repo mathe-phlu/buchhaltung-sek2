@@ -394,6 +394,10 @@ async function avbOeffnen(pfad) {
   catch (e) { meldung("Datei nicht gefunden (noch nicht synchronisiert?): " + pfad); }
 }
 const avbLink = (p) => (p.avbDatei ? `<span class="link" title="${esc(p.avbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.avbDatei))})">📄 AVB</span>` : "");
+// Synergie BMS: eigene AVB für den Teil an der BMS / Berufsfachschule (Feld bmsAvbDatei)
+// weitere AVBs zum selben Praktikum (z.B. Fortsetzung nach den Ferien): Feld avbWeitere = [{ datei, titel }]
+const weitereAvbLinks = (p) => (p.avbWeitere || []).map((w) => `<span class="link" title="${esc(w.datei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(w.datei))})">📄 ${esc(w.titel || "weitere AVB")}</span>`).join(" · ");
+const bmsAvbLink = (p) => (p.bmsAvbDatei ? `<span class="link" title="${esc(p.bmsAvbDatei)}" onclick="event.stopPropagation(); avbOeffnen(${esc(JSON.stringify(p.bmsAvbDatei))})">📄 AVB BMS</span>` : "");
 /* Termin des Unterrichtsbesuchs mit Uhrzeit */
 const ubText = (p) => (p.ub ? `${datumKurz(p.ub)}${p.ubZeit ? ", " + p.ubZeit + (p.ubBis ? "–" + p.ubBis : "") + " Uhr" : ""}` : "");
 const pxlKontakt = (x) => (x ? [x.mail ? `<a class="link" href="mailto:${esc(x.mail.trim())}" onclick="event.stopPropagation()">${esc(x.mail.trim())}</a>` : `<span class="nein">E-Mail fehlt</span>`, x.tel ? esc(x.tel) : ""].filter(Boolean).join(" · ") : "");
@@ -600,16 +604,21 @@ async function docxZeilen(datei) {
   const xml = new DOMParser().parseFromString(await zip.file("word/document.xml").async("string"), "application/xml");
   const absatz = (p) => [...p.getElementsByTagName("*")].map((n) => (n.nodeName === "w:t" ? n.textContent : n.nodeName === "w:tab" || n.nodeName === "w:br" ? " " : "")).join("").replace(/\s+/g, " ").trim();
   const zeilen = [];
+  // Zellen und Zeilen können in Eingabefeldern (w:sdt) stecken – die durchsuchen
+  const kinder = (n, name) => { const r = []; for (const c of n.children) { if (c.nodeName === name) r.push(c); else if (["w:sdt", "w:sdtContent", "w:customXml", "w:smartTag"].includes(c.nodeName)) r.push(...kinder(c, name)); } return r; };
   const lauf = (knoten) => {
     for (const k of knoten.children) {
       if (k.nodeName === "w:p") { const t = absatz(k); if (t) zeilen.push({ text: t }); }
       else if (k.nodeName === "w:tbl") {
-        for (const tr of [...k.children].filter((x) => x.nodeName === "w:tr")) {
-          const zellen = [...tr.children].filter((x) => x.nodeName === "w:tc").map((tc) => [...tc.children].filter((x) => x.nodeName === "w:p").map(absatz).filter(Boolean));
+        for (const tr of kinder(k, "w:tr")) {
+          const zellen = kinder(tr, "w:tc").map((tc) => kinder(tc, "w:p").map(absatz).filter(Boolean));
+          // eine Tabellenzeile mit allen Lektionen untereinander (je Zelle ein Absatz pro Lektion): in einzelne Zeilen auftrennen
+          const mehr = zellen.filter((z) => z.length > 1), n = Math.max(0, ...zellen.map((z) => z.length));
+          if (mehr.length >= 3 && n > 1) { for (let i = 0; i < n; i++) { const zz = zellen.map((z) => (z.length > 1 ? z[i] || "" : i === 0 ? z[0] || "" : "")); zeilen.push({ text: zz.join(" | "), zellen: zz }); } continue; }
           zeilen.push({ text: zellen.map((z) => z.join(" ")).join(" | "), zellen: zellen.map((z) => z.join(" ")) });
           // Zellen mit mehreren Absätzen (z.B. eine Lektion pro Absatz): jeden Absatz auch einzeln
           zellen.forEach((z, i) => { if (z.length > 1) for (const a of z) zeilen.push({ text: (zellen[0][0] || "") + " | " + a, teil: true }); });
-          for (const tc of [...tr.children].filter((x) => x.nodeName === "w:tc")) for (const inner of [...tc.children].filter((x) => x.nodeName === "w:tbl")) lauf({ children: [inner] });
+          for (const tc of kinder(tr, "w:tc")) for (const inner of kinder(tc, "w:tbl")) lauf({ children: [inner] });
         }
       } else if (k.children && k.children.length && ["w:body", "w:sdt", "w:sdtContent"].includes(k.nodeName)) lauf(k);
     }
@@ -686,10 +695,10 @@ function lektionenAus(zeilen, sem) {
     if (!klasse) klasse = letzteKlasse[modus || "U"]; else letzteKlasse[modus || "U"] = klasse;
     let anzahl = lekt ? ({ eine: "1", zwei: "2", drei: "3" }[lekt[1].toLowerCase()] || lekt[1]) : "", raum = raumM ? raumM[1] : "";
     if (zeitPos >= 0 && (!lekt || !raumM)) { // Tabelle im PDF: nach der Zeit «2 | 231» = Lektionen, Raum
-      let r = danach.replace(/\(.*?\)/g, " ").replace(/\|/g, " ").replace(/\s+/g, " ").trim();
+      let r = danach.replace(/\(.*?\)/g, " ").replace(/\|/g, " ").replace(/\bLektion(?:en)?\b/gi, " ").replace(/\s+/g, " ").trim();
       const an = /^(\d(?:[.,]5)?)(?:\s+|$)/.exec(r);   // «1.5 | O 101»: Anzahl (auch halbe), dann Raum
       if (an && Number(an[1].replace(",", ".")) <= 4) { if (!anzahl) anzahl = an[1]; r = r.slice(an[0].length); }
-      if (!raum && r) { const rm = /^([A-Z]{0,2}\s?\d{1,4}[a-z]?|[A-Z]\d{1,4})\b/.exec(r); if (rm) raum = rm[1]; }
+      if (!raum && r) { const rm = /^([A-Z]{0,2}\s?\d{1,4}(?:\.\d{1,2})?[a-z]?|[A-Z]\d{1,4})(?=\s|$)/.exec(r); if (rm) raum = rm[1]; }
     }
     L.push({ art: modus === "H" ? "H" : "U", datum, von, bis, klasse, anzahl, raum, tab: kopfZahl, ...(notiz ? { notiz } : {}) });
   }
@@ -946,7 +955,7 @@ function kachel(p) {
   }
   for (const h of hinweisListe(p)) zeilen.push(z("ⓘ " + esc(h), "hinw", h));
   const bx = D.pxl[p.bmsPxl];
-  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L · selbst organisiert</span></div>${bx ? `<div class="kz">${esc(pxlKurz(bx))}</div>` : ""}<div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz besuch leise">kein Besuch</div></div>` : "";
+  const bmsKachel = p.art === "BP" && p.bms ? `<div class="kachel st-bms" onclick="praktikumDialog('${p.id}')" title="Synergie Berufspädagogik – selbst organisiert, kein Besuch"><div class="kz k1"><span>BMS · ${bmsTeile(p).bms} L · selbst organisiert</span></div>${bx ? `<div class="kz">${esc(pxlKurz(bx))}</div>` : ""}<div class="kz leise">${esc(bx ? schuleKurz(bx) : p.bmsText || "Ort noch offen")}</div><div class="kz besuch leise">kein Besuch${p.bmsAvbDatei ? " · " + bmsAvbLink(p) : ""}</div></div>` : "";
   return `<div class="kachel st-${si[2]}" style="${ab ? "opacity:.38" : ""}" onclick="praktikumDialog('${p.id}')">${kopf}${zeilen.join("")}</div>${bmsKachel}`;
 }
 function vVerlaeufe() {
@@ -1559,7 +1568,7 @@ function vPensen() {
 const EINGANG = "Eingang AVB";
 async function eingangLesen() {
   let d; try { d = await (S.wurzel || S.ordner).getDirectoryHandle(EINGANG, { create: true }); } catch (e) { return meldung("Ordner «" + EINGANG + "» geht nicht: " + e.message); }
-  const erledigt = new Set(Object.values(D.praktika).map((p) => p.avbQuelle).filter(Boolean)), liste = [];
+  const erledigt = new Set(Object.values(D.praktika).flatMap((p) => [p.avbQuelle, p.bmsAvbQuelle, ...(p.avbWeitere || []).map((w) => w.quelle)]).filter(Boolean)), liste = [];
   meldung("Eingang wird gelesen …");
   for await (const [n, h] of d.entries()) {
     if (h.kind !== "file" || !/\.(pdf|docx)$/i.test(n) || n.startsWith("~$") || n.startsWith(".")) continue;
@@ -1674,7 +1683,7 @@ function praktikumDialog(id, vorlage) {
       ${p.art === "BP" && bpHinweis(p) ? `<div class="klein" style="margin-top:3px"><b>${esc(bpHinweis(p))}</b></div>` : ""}
       ${x && passtNicht(x, p) ? `<div class="klein nein">⚠ ${esc(passtNicht(x, p))}</div>` : ""}</div>
     <div class="abschnitt"><h4>Ausbildungsvereinbarung</h4>
-      <label class="ohne"><input type="checkbox" id="f_avb" ${p.avb ? "checked" : ""}> liegt vor</label>${p.avbDatei ? ` · ${avbLink(p)}` : ""}
+      <label class="ohne"><input type="checkbox" id="f_avb" ${p.avb ? "checked" : ""}> liegt vor</label>${p.avbDatei ? ` · ${avbLink(p)}` : ""}${p.bmsAvbDatei ? ` · ${bmsAvbLink(p)}` : ""}${(p.avbWeitere || []).length ? ` · ${weitereAvbLinks(p)}` : ""}
       ${id ? `<span class="ablage klein-ablage" ondragover="event.preventDefault(); this.classList.add('drueber')" ondragleave="this.classList.remove('drueber')" ondrop="event.preventDefault(); this.classList.remove('drueber'); event.dataTransfer.files[0] && avbHochladen('${id}', event.dataTransfer.files[0])" onclick="avbWaehlen('${id}')">↑ ${p.avbDatei ? "neue Fassung" : "hochladen"} (hierher ziehen)</span>` : `<span class="mini"> Hochladen nach dem ersten Speichern.</span>`}</div>
     <div class="abschnitt"><h4>Vorbesprechung</h4>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="f_vbDatum" type="date" value="${esc(p.vbDatum || "")}"> <input id="f_vbZeit" type="time" value="${esc(p.vbZeit || "")}"> <input id="f_vbOrt" value="${esc(p.vbOrt || "")}" placeholder="wo / online" size="16"></div></div>
