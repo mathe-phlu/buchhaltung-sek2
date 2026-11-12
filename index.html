@@ -69,6 +69,8 @@ tr.klickbar:hover td { background: #fbf8f1; cursor: pointer; }
 .filter input[type=search], .filter select { font-size: 14px; padding: 5px 6px; border: 1px solid #ccc; border-radius: 5px; min-width: 120px; }
 .filter input[type=search] { min-width: 200px; }
 .ffuss { font-size: 13px; padding-bottom: 6px; } .faktiv { color: var(--braun-dunkel); }
+textarea.hinwfeld { width: 100%; min-width: 180px; min-height: 28px; font-size: 12.5px; padding: 3px 5px; resize: vertical; border-color: #e2dccd; background: #fffdf8; }
+td.frueher div { white-space: nowrap; line-height: 1.5; } .fsem { display: inline-block; min-width: 38px; color: #888; font-size: 11.5px; }
 .dozwahl { display: inline-block; border: 1.5px solid var(--f); color: var(--f); background: #fff; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 3px; line-height: 18px; user-select: none; }
 .dozwahl.an { background: var(--f); color: #fff; }
 .dozwahl.f_vertretung.an { background: #fff; color: var(--f); border-style: dashed; box-shadow: inset 0 0 0 1px var(--f); }
@@ -517,6 +519,8 @@ function dozPillen(klasse, gewaehlt, aktion = "") {
   return (D.einst.team || []).map((t) => `<span class="dozwahl ${klasse} ${(gewaehlt || []).includes(t.kuerzel) ? "an" : ""}" data-k="${esc(t.kuerzel)}" style="--f:${dozFarbe(t.kuerzel)}" title="${esc(t.name || t.kuerzel)}" onclick="event.stopPropagation(); ${aktion || "this.classList.toggle('an')"}">${esc(t.kuerzel)}</span>`).join("");
 }
 const gewaehlteDoz = (klasse) => [...document.querySelectorAll(`.dozwahl.${klasse}.an`)].map((e) => e.dataset.k);
+/* «wec; alh», «wec, alh», «wec alh» – alles gleich */
+function kuerzelListe(l) { return (Array.isArray(l) ? l : [l]).flatMap((x) => String(x || "").split(/[\s,;]+/)).filter(Boolean); }
 function dozText(p) { return ((p.doz || []).length ? p.doz.join("+") : "???") + ((p.vertretung || []).length ? " · vertr. " + p.vertretung.join("+") : ""); }
 function istMeins(p) { return (p.doz || []).includes(S.ich) || (p.vertretung || []).includes(S.ich); }
 const beteiligt = (p, k) => (p.doz || []).includes(k) || (p.vertretung || []).includes(k);
@@ -783,9 +787,9 @@ function vLektionen() {
 /* ====================== Zeichnen ====================== */
 /* Rollen: der Admin sieht alles; die Zuteilung sehen die Zuteilenden und der Admin; Meldungen nur der Admin.
    Achtung: Ausblenden ist kein Datenschutz – wer den Ordner hat, kann die Dateien lesen. */
-const istAdmin = () => !S.ich || (D.einst.admin || ["alh"]).includes(S.ich);
-const adminText = () => (D.einst.admin || ["alh"]).map((k) => ((D.einst.team || []).find((t) => t.kuerzel === k) || { name: k }).name).join(", ");
-const darfSehen = (k) => (k === "meldungen" ? istAdmin() : k === "zuteilung" ? istAdmin() || (D.einst.zuteilung || []).includes(S.ich) : true);
+const istAdmin = () => !S.ich || kuerzelListe(D.einst.admin || ["alh"]).includes(S.ich);
+const adminText = () => kuerzelListe(D.einst.admin || ["alh"]).map((k) => ((D.einst.team || []).find((t) => t.kuerzel === k) || { name: k }).name).join(", ");
+const darfSehen = (k) => (k === "meldungen" ? istAdmin() : k === "zuteilung" ? istAdmin() || kuerzelListe(D.einst.zuteilung).includes(S.ich) : true);
 const REITER = [["start", "Start"], ["studierende", "Studierende"], ["pxl", "Praxislehrpersonen"], ["zuteilung", "Zuteilung"], ["meldungen", "Meldungen"], ["einstellungen", "⚙ Einstellungen"]];
 function zeichnen() {
   if ($("#semListe") && !$("#semListe").children.length) $("#semListe").innerHTML = semVorschlaege().map((x) => `<option value="${x}">${x === semHeute() ? "aktuelles Semester" : ""}</option>`).join("");
@@ -825,7 +829,7 @@ function willkommen() {
 function vStart() {
   const sem = semHeute(), heute = heuteIso(), meine = S.f.nurMeine && S.ich;
   const alle = Object.values(D.praktika).filter((p) => D.studis[p.student] && !istArchiv(D.studis[p.student]));
-  const sicht = alle.filter((p) => !meine || istMeins(p) || (!(p.doz || []).length && (D.einst.zuteilung || []).includes(S.ich)));
+  const sicht = alle.filter((p) => !meine || istMeins(p) || (!(p.doz || []).length && kuerzelListe(D.einst.zuteilung).includes(S.ich)));
   const pxlInfo = (p) => p.pxl && D.pxl[p.pxl] ? ` · ${esc(pxlKurz(D.pxl[p.pxl]))}` : p.pxlText ? ` · ${esc(p.pxlText)}` : "";
   const zeile = (p, extra = "") => `<li><span class="link" onclick="personZeigen('${p.student}')">${esc(nameVon(D.studis[p.student]))}</span> · <span class="link" onclick="praktikumDialog('${p.id}')">${p.art} ${esc(p.semester || "")}</span>${extra}</li>`;
   // Termine: Unterrichtsbesuche, Prüfungslektionen, Vorbesprechungen, Diplomprüfungen
@@ -973,13 +977,15 @@ function vPxl() {
   const typen = ["Gymnasium", "FMS", "BMS"];
   const liste = Object.values(D.pxl).filter((x) => (!S.f.pxlTyp || x.schultyp === S.f.pxlTyp) && (!q || JSON.stringify([x.name, x.vorname, x.schule, x.kanton, x.hinweise]).toLowerCase().includes(q))
     && (!S.f.pxlVerf || (verfVon(x, sem).stand || "") === (S.f.pxlVerf === "?" ? "" : S.f.pxlVerf)));
+  const darfHinweise = istAdmin() || kuerzelListe(D.einst.zuteilung).includes(S.ich);
   const zeile = (x) => {
     const v = verfVon(x, sem), jetzt = betreuungenVon(x.id).filter((p) => p.semester === sem), frueher = betreuungenVon(x.id).filter((p) => semKey(p.semester) < semKey(sem));
     return `<tr><td><span class="link" onclick="pxlDialog('${x.id}')"><b>${esc(x.name)}</b> ${esc(x.vorname)}</span>${x.kurz && x.kurz.trim() ? ` <span class="nein klein" title="${esc(x.kurz)}">!</span>` : ""}${(D.notizen[x.id] || []).length ? ` <span class="leise" title="${esc(D.notizen[x.id].at(-1).text)}">✎</span>` : ""}</td>
-    <td>${esc(schuleKurz(x))} <span class="leise">(${esc(x.kanton)})</span><div class="mini">${esc(x.reise)}</div></td><td class="klein">${esc(x.hinweise)}</td>
+    <td>${esc(schuleKurz(x))} <span class="leise">(${esc(x.kanton)})</span>${x.reise ? `<div class="mini" title="Reisezeit mit SBB + zu Fuss (Spalte aus der PxL-Liste)">🚆 ${esc(x.reise)}</div>` : ""}</td>
+    <td>${darfHinweise ? `<textarea class="hinwfeld" rows="1" placeholder="Antwort, z.B. ab Aug 27, kein PP" onchange="pxlHinweis('${x.id}', this.value)">${esc(x.hinweise || "")}</textarea>` : `<span class="klein">${esc(x.hinweise || "")}</span>`}</td>
     <td><select onchange="verfSetzen('${x.id}','${sem}',this.value)">${VERF.map(([k, t]) => `<option value="${k}" ${(v.stand || "") === k ? "selected" : ""}>${t}</option>`).join("")}</select>${v.notiz ? `<div class="mini">${esc(v.notiz)}</div>` : ""}</td>
     <td class="klein">${jetzt.map((p) => `<div><span class="link" onclick="praktikumDialog('${p.id}')">${p.art} ${esc(D.studis[p.student] ? D.studis[p.student].name : "?")}</span> <span class="punkt st-${statusInfo(p)[2]}"></span></div>`).join("") || `<span class="leise">–</span>`}</td>
-    <td class="klein" title="${esc(frueher.map((p) => `${p.semester} ${p.art} ${D.studis[p.student] ? D.studis[p.student].name : "?"}`).join("\n"))}">${frueher.length ? `${frueher.length}× <span class="leise">zuletzt ${esc(frueher[0].semester)}</span>` : `<span class="leise">–</span>`}</td></tr>`;
+    <td class="klein frueher">${frueher.length ? frueher.slice(0, 3).map((p) => `<div><span class="fsem">${esc(p.semester)}</span> ${p.art} <span class="link" onclick="personZeigen('${p.student}')">${esc(D.studis[p.student] ? D.studis[p.student].name : "?")}</span></div>`).join("") + (frueher.length > 3 ? `<div class="leise" title="${esc(frueher.slice(3).map((p) => `${p.semester} ${p.art} ${D.studis[p.student] ? D.studis[p.student].name : "?"}`).join("\n"))}">+ ${frueher.length - 3} frühere</div>` : "") : `<span class="leise">–</span>`}</td></tr>`;
   };
   return `<h2>Praxislehrpersonen</h2>
   <div class="leiste"><span class="gr">Verfügbarkeit für <select onchange="filter('pxlSem', this.value)">${sems.map((x) => `<option ${x === sem ? "selected" : ""}>${x}</option>`).join("")}</select></span>
@@ -988,9 +994,10 @@ function vPxl() {
   <span class="gr"><input id="pxlsuche" placeholder="Name, Schule, Kanton" value="${esc(S.f.pxlSuche)}" oninput="filterTipp('pxlSuche', this.value)"></span>
   <button onclick="S.nachPxl = null; pxlDialog()">＋ neue PxL</button><span class="leise klein">${liste.length} von ${Object.keys(D.pxl).length}</span></div>
   ${typen.filter((t) => liste.some((x) => x.schultyp === t)).map((t) => `<h3>${t} <span class="leise klein" style="font-family:inherit">${esc(S.stamm.schultypen[t] || "")}</span></h3>
-  <table><thead><tr><th>Name</th><th>Schule · Reiseweg</th><th>Hinweise</th><th>Verfügbar ${sem}</th><th>Betreut ${sem}</th><th>Früher</th></tr></thead><tbody>
+  <table><thead><tr><th>Name</th><th>Schule · Reise</th><th>Hinweise <span class="mini" style="font-weight:400">(Antworten zur Verfügbarkeit)</span></th><th>Verfügbar ${sem}</th><th>Betreut ${sem}</th><th>Früher betreut</th></tr></thead><tbody>
   ${liste.filter((x) => x.schultyp === t).sort((a, b) => a.kanton.localeCompare(b.kanton) || a.name.localeCompare(b.name)).map(zeile).join("")}</tbody></table>`).join("")}`;
 }
+async function pxlHinweis(xid, t) { await eintragen({ typ: "aendern", art: "pxl", ref: xid, felder: { hinweise: t.trim() || null } }); }
 async function verfSetzen(xid, sem, stand) {
   const alt = verfVon(D.pxl[xid], sem);
   await eintragen({ typ: "aendern", art: "pxl", ref: xid, felder: { ["verfuegbar." + sem]: stand || alt.notiz ? Object.assign({}, alt, { stand }) : null } });
@@ -999,7 +1006,7 @@ async function verfSetzen(xid, sem, stand) {
 /* ---------- Zuteilung ---------- */
 function vZuteilung() {
   const sem = S.f.zuSem || semHeute(), sems = semesterListe().filter((x) => semKey(x) >= semKey(semHeute()) - 1);
-  const darf = (D.einst.zuteilung || []).includes(S.ich) || istAdmin();
+  const darf = kuerzelListe(D.einst.zuteilung).includes(S.ich) || istAdmin();
   const pr = Object.values(D.praktika).filter((p) => p.semester === sem && D.studis[p.student]);
   const offen = pr.filter((p) => ART[p.art].praktikum && ["offen", "pxl_suchen", "angefragt"].includes(p.status));
   const ohneSem = Object.values(D.praktika).filter((p) => relevant(p) && !p.semester && !erledigt(p) && D.studis[p.student] && D.studis[p.student].stand === "aktiv" && !istArchiv(D.studis[p.student]));
@@ -1027,7 +1034,7 @@ function vZuteilung() {
   };
   return `<h2>Zuteilung</h2>
   <div class="leiste"><span class="gr">Semester ${sems.map((x) => `<span class="chip ${x === sem ? "an" : ""}" onclick="filter('zuSem','${x}')">${x}</span>`).join("")}</span>
-  ${darf ? "" : `<span class="nein klein">Zuteilen dürfen: ${esc((D.einst.zuteilung || []).join(", "))} – du siehst die Liste nur.</span>`}</div>
+  ${darf ? "" : `<span class="nein klein">Zuteilen dürfen: ${esc(kuerzelListe(D.einst.zuteilung).join(", "))} – du siehst die Liste nur.</span>`}</div>
   <div class="karten" style="grid-template-columns:repeat(auto-fill,minmax(370px,1fr))">
   ${last.map((l) => pensumKarte(sem, l.t, pr, darf)).join("")}
   <div class="karte"><b>${sem}</b> · ${pr.filter((p) => ART[p.art].praktikum).length} Praktika, ${pr.filter((p) => !ART[p.art].praktikum).length} Arbeiten<div class="mini">${STATUS_P.map((st) => [st, pr.filter((p) => ART[p.art].praktikum && p.status === st[0]).length]).filter((x) => x[1]).map(([st, n]) => `<span class="punkt st-${st[2]}"></span>${n} ${st[1]}`).join("<br>")}</div></div>
@@ -1475,7 +1482,7 @@ async function eingangLesen() {
 }
 const normName = (t) => String(t || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
 function eingangHtml() {
-  const team = (D.einst.zuteilung || []).includes(S.ich) || istAdmin();
+  const team = kuerzelListe(D.einst.zuteilung).includes(S.ich) || istAdmin();
   if (!team) return "";
   const l = S.eingang;
   return `<details ${l && l.some((x) => !x.erledigt) ? "open" : ""}><summary><h3 style="display:inline">📥 AVB-Eingang</h3> <span class="leise klein">Dateien aus Teams oder Outlook in den Ordner «${EINGANG}» legen</span></summary>
@@ -1511,7 +1518,7 @@ function vEinstellungen() {
   return `<h2>Einstellungen</h2>
   <div class="karten">
   <div class="karte"><h3>Team</h3><div class="form">${(e.team || []).map((t, i) => `<label>Kürzel ${i + 1}</label><span><input id="tk${i}" value="${esc(t.kuerzel)}" size="5"> <input id="tn${i}" value="${esc(t.name)}"> <input id="tm${i}" type="email" placeholder="E-Mail" value="${esc(t.mail || "")}"> <input id="tf${i}" type="color" value="${esc(t.farbe || FARBEN_STD[t.kuerzel] || "#777777")}" title="Farbe"></span>`).join("")}
-  <label>Zuteilen dürfen</label><input id="zut" value="${esc((e.zuteilung || []).join(", "))}">
+  <label>Zuteilen dürfen</label><input id="zut" value="${esc(kuerzelListe(e.zuteilung).join(", "))}">
   <label>Admin (sieht alles)</label><input id="adm" value="${esc((e.admin || ["alh"]).join(", "))}" ${istAdmin() ? "" : "disabled"}></div>
   <p class="leise klein">Wer zuteilt, sieht im Reiter Zuteilung die Auswahl und kann Doz und PxL setzen.</p></div>
 
@@ -1524,7 +1531,7 @@ function vEinstellungen() {
 async function einstSpeichern() {
   const e = D.einst, team = (e.team || []).map((t, i) => ({ kuerzel: $("#tk" + i).value.trim(), name: $("#tn" + i).value.trim(), mail: $("#tm" + i).value.trim(), farbe: $("#tf" + i).value })).filter((t) => t.kuerzel);
   const profile = Object.fromEntries(PROFILE.map((p) => [p, Object.fromEntries($("#pr_" + p).value.split(",").map((t) => t.trim()).filter(Boolean).map((t) => { const [k, ...r] = t.split(" "); return [k, r.join(" ") || "ja"]; }))]));
-  await eintragen({ typ: "einst", felder: { team, profile, zuteilung: $("#zut").value.split(",").map((t) => t.trim()).filter(Boolean), ...(istAdmin() ? { admin: $("#adm").value.split(",").map((t) => t.trim()).filter(Boolean) } : {}) } });
+  await eintragen({ typ: "einst", felder: { team, profile, zuteilung: kuerzelListe($("#zut").value), ...(istAdmin() ? { admin: kuerzelListe($("#adm").value) } : {}) } });
   meldung("Gespeichert.");
 }
 
